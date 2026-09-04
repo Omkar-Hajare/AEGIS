@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+redis>=5.0.0
