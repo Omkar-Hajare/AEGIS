@@ -5,6 +5,12 @@ from fastapi import APIRouter
 
 from cache.factory import create_cache_manager
 from cache.metadata import calculate_payload_size_bytes
+from metrics.prometheus import (
+    BACKEND_LATENCY,
+    BACKEND_REQUESTS,
+    CACHE_HITS,
+    CACHE_MISSES,
+)
 from telemetry.collector import telemetry_collector
 from workload.product_api import get_product_data
 from workload.recommendation_api import get_recommendation_data
@@ -24,15 +30,19 @@ def get_product(product_id: str) -> dict[str, Any]:
         telemetry_collector.record_cache_hit()
         telemetry_collector.record_key_access(cache_key, hit=True)
         cache_manager.record_hit(cache_key)
+        CACHE_HITS.inc()
         return cached_data
 
     telemetry_collector.record_cache_miss()
     telemetry_collector.record_key_access(cache_key, hit=False)
     cache_manager.record_miss(cache_key)
+    CACHE_MISSES.inc()
     start_time = time.perf_counter()
     data = get_product_data(product_id)
     latency_ms = (time.perf_counter() - start_time) * 1000.0
     telemetry_collector.record_backend_call(latency_ms)
+    BACKEND_REQUESTS.inc()
+    BACKEND_LATENCY.observe(latency_ms / 1000.0)  # histogram expects seconds
 
     cache_manager.set(cache_key, data)
     if cache_manager.get_metadata(cache_key) is None:
@@ -57,15 +67,19 @@ def get_recommendation(user_id: str) -> dict[str, Any]:
         telemetry_collector.record_cache_hit()
         telemetry_collector.record_key_access(cache_key, hit=True)
         cache_manager.record_hit(cache_key)
+        CACHE_HITS.inc()
         return cached_data
 
     telemetry_collector.record_cache_miss()
     telemetry_collector.record_key_access(cache_key, hit=False)
     cache_manager.record_miss(cache_key)
+    CACHE_MISSES.inc()
     start_time = time.perf_counter()
     data = get_recommendation_data(user_id)
     latency_ms = (time.perf_counter() - start_time) * 1000.0
     telemetry_collector.record_backend_call(latency_ms)
+    BACKEND_REQUESTS.inc()
+    BACKEND_LATENCY.observe(latency_ms / 1000.0)  # histogram expects seconds
 
     cache_manager.set(cache_key, data)
     if cache_manager.get_metadata(cache_key) is None:
