@@ -19,6 +19,25 @@ NAV_OPTIONS = [
 ]
 
 
+LABEL_MAP = {
+    "Executive Overview": "Overview",
+    "Cache Performance": "Performance",
+    "Request Simulator": "Simulator",
+    "Adaptive Decisions": "Decisions",
+    "System State": "System",
+    "Workload Simulator": "Workload",
+    "Policy Benchmarks": "Benchmarks",
+}
+
+
+def navigate_to(page: str):
+    """Programmatically navigate to any page."""
+    target = LABEL_MAP.get(page, page)
+    if target in NAV_OPTIONS:
+        st.session_state["active_nav"] = target
+        st.rerun()
+
+
 def render_top_navbar(current_tab: str = "Overview") -> str:
     """Render high-performance, sticky top navigation bar with branding, clean segmented tabs, and quick theme toggle."""
     c = get_theme_colors()
@@ -61,32 +80,30 @@ def render_top_navbar(current_tab: str = "Overview") -> str:
     with col_nav:
         # Default to session state
         active_val = st.session_state.get("active_nav", current_tab)
-        # Handle legacy and alias labels mapping
-        label_map = {
-            "Executive Overview": "Overview",
-            "Cache Performance": "Performance",
-            "Request Simulator": "Simulator",
-            "Adaptive Decisions": "Decisions",
-            "System State": "System",
-            "Workload Simulator": "Workload",
-            "Policy Benchmarks": "Benchmarks",
-        }
-        active_val = label_map.get(active_val, active_val)
+        active_val = LABEL_MAP.get(active_val, active_val)
         if active_val not in NAV_OPTIONS:
             active_val = NAV_OPTIONS[0]
             st.session_state["active_nav"] = active_val
 
+        # If active_nav changed externally (e.g. from shortcut buttons), sync the widget state before rendering
+        if active_val != st.session_state.get("_last_active_nav"):
+            st.session_state["top_navbar_segmented_control"] = active_val
+            st.session_state["_last_active_nav"] = active_val
+
         selected = st.segmented_control(
             "Navigation Menu",
             options=NAV_OPTIONS,
-            default=active_val,
             label_visibility="collapsed",
             key="top_navbar_segmented_control",
         )
 
         if selected and selected != active_val:
             st.session_state["active_nav"] = selected
+            st.session_state["_last_active_nav"] = selected
             st.rerun()
+
+        if selected:
+            st.session_state["_last_active_nav"] = selected
 
     with col_actions:
         is_dark = is_dark_mode()

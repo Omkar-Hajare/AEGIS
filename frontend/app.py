@@ -9,7 +9,34 @@ st.set_page_config(
 
 import importlib
 import frontend.components.styles as styles
+import frontend.components.navbar as navbar
+import frontend.views.overview_view as overview_view
+import frontend.views.cache_performance_view as cache_performance_view
+import frontend.views.request_simulator_view as request_simulator_view
+import frontend.views.workload_view as workload_view
+import frontend.views.system_view as system_view
+import frontend.views.cache_objects_view as cache_objects_view
+import frontend.views.adaptive_decisions_view as adaptive_decisions_view
+import frontend.views.cost_analysis_view as cost_analysis_view
+import frontend.views.benchmarks_view as benchmarks_view
+
+import frontend.components.charts as charts
+import frontend.mocks.data as mock_data
+
 importlib.reload(styles)
+importlib.reload(navbar)
+importlib.reload(charts)
+importlib.reload(mock_data)
+importlib.reload(overview_view)
+importlib.reload(cache_performance_view)
+importlib.reload(request_simulator_view)
+importlib.reload(workload_view)
+importlib.reload(system_view)
+importlib.reload(cache_objects_view)
+importlib.reload(adaptive_decisions_view)
+importlib.reload(cost_analysis_view)
+importlib.reload(benchmarks_view)
+
 from frontend.components.styles import apply_global_styles
 from frontend.components.navbar import render_top_navbar, NAV_OPTIONS
 from frontend.views.overview_view import render_overview_view

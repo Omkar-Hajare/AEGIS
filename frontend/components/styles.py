@@ -485,11 +485,14 @@ def apply_global_styles():
             text-align: center !important;
             transition: all 0.15s ease-in-out !important;
         }}
-        button[data-variant="segmented_control"] *,
-        [data-testid="stButtonGroup"] button *,
-        button[data-variant="segmented_control"] p,
-        button[data-variant="segmented_control"] span,
-        button[data-variant="segmented_control"] div {{
+        .stApp button[data-variant="segmented_control"] *,
+        .stApp [data-testid="stButtonGroup"] button *,
+        .stApp button[data-variant="segmented_control"] p,
+        .stApp button[data-variant="segmented_control"] span,
+        .stApp button[data-variant="segmented_control"] div,
+        .stApp [data-testid="stButtonGroup"] button p,
+        .stApp [data-testid="stButtonGroup"] button span,
+        .stApp [data-testid="stButtonGroup"] button div {{
             color: {seg_inactive_color} !important;
             font-weight: 600 !important;
             font-size: 13px !important;
@@ -499,8 +502,10 @@ def apply_global_styles():
             background-color: {seg_hover_bg} !important;
             background: {seg_hover_bg} !important;
         }}
-        button[data-variant="segmented_control"]:hover *,
-        [data-testid="stButtonGroup"] button:hover * {{
+        .stApp button[data-variant="segmented_control"]:hover *,
+        .stApp [data-testid="stButtonGroup"] button:hover *,
+        .stApp button[data-variant="segmented_control"]:hover p,
+        .stApp [data-testid="stButtonGroup"] button:hover p {{
             color: {c["text"]} !important;
         }}
         button[data-variant="segmented_control"][data-selected="true"],
@@ -515,12 +520,15 @@ def apply_global_styles():
             box-shadow: {seg_active_shadow} !important;
             color: {seg_active_color} !important;
         }}
-        button[data-variant="segmented_control"][data-selected="true"] *,
-        button[data-variant="segmented_control"][data-selected] *,
-        button[data-variant="segmented_control"][aria-checked="true"] *,
-        [data-testid="stButtonGroup"] button[data-selected="true"] *,
-        [data-testid="stButtonGroup"] button[data-selected] *,
-        [data-testid="stButtonGroup"] button[aria-checked="true"] * {{
+        .stApp button[data-variant="segmented_control"][data-selected="true"] *,
+        .stApp button[data-variant="segmented_control"][data-selected] *,
+        .stApp button[data-variant="segmented_control"][aria-checked="true"] *,
+        .stApp [data-testid="stButtonGroup"] button[data-selected="true"] *,
+        .stApp [data-testid="stButtonGroup"] button[data-selected] *,
+        .stApp [data-testid="stButtonGroup"] button[aria-checked="true"] *,
+        .stApp button[data-variant="segmented_control"][data-selected="true"] p,
+        .stApp [data-testid="stButtonGroup"] button[data-selected="true"] p,
+        .stApp [data-testid="stButtonGroup"] button[aria-checked="true"] p {{
             color: {seg_active_color} !important;
             font-weight: 700 !important;
         }}
@@ -533,23 +541,38 @@ def apply_global_styles():
             font-weight: 600 !important;
             min-height: 34px !important;
             padding: 4px 10px !important;
-            background: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"} !important;
-            background-color: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"} !important;
+            background: {"rgba(255, 255, 255, 0.05)" if dark else "#FFFFFF"} !important;
+            background-color: {"rgba(255, 255, 255, 0.05)" if dark else "#FFFFFF"} !important;
             color: {c["text"]} !important;
-            border: 1px solid {c["card_border"]} !important;
-            box-shadow: none !important;
+            border: 1px solid {"rgba(255, 255, 255, 0.10)" if dark else "rgba(0, 0, 0, 0.12)"} !important;
+            box-shadow: {"none" if dark else "0 1px 3px rgba(0, 0, 0, 0.04)"} !important;
             transition: all 0.18s ease !important;
+        }}
+        .stApp div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) .stButton button *,
+        .stApp div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) span[data-testid="stTooltipHoverTarget"] button *,
+        .stApp div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) .stButton button p,
+        .stApp div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) span[data-testid="stTooltipHoverTarget"] button p {{
+            color: {c["text"]} !important;
         }}
         div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) .stButton button:hover,
         div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) span[data-testid="stTooltipHoverTarget"] button:hover {{
-            background: {"rgba(255, 255, 255, 0.09)" if dark else "rgba(0, 0, 0, 0.07)"} !important;
+            background: {"rgba(255, 255, 255, 0.09)" if dark else "#F4F4F5"} !important;
             border-color: {card_border_hover} !important;
             color: {"#FFFFFF" if dark else "#000000"} !important;
             box-shadow: none !important;
         }}
+        .stApp div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) .stButton button:hover *,
+        .stApp div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) span[data-testid="stTooltipHoverTarget"] button:hover *,
+        .stApp div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) .stButton button:hover p,
+        .stApp div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) span[data-testid="stTooltipHoverTarget"] button:hover p {{
+            color: {"#FFFFFF" if dark else "#000000"} !important;
+        }}
 
-        /* Force theme text colors across standard markdown and Streamlit elements */
-        .stApp, .stApp p, .stApp label, .stApp div[data-testid="stMarkdownContainer"] p {{
+        /* Force theme text colors across standard markdown and Streamlit elements (excluding button interiors) */
+        .stApp,
+        .stApp p:not(button p):not(button *),
+        .stApp label:not(button label):not(button *),
+        .stApp div[data-testid="stMarkdownContainer"]:not(button *):not(button) p {{
             color: {c["text"]} !important;
         }}
 
@@ -867,31 +890,77 @@ def apply_global_styles():
         span[data-testid="stTooltipHoverTarget"] button {{
             border-radius: 8px !important;
             font-weight: 600 !important;
-            font-size: 12.5px !important;
-            min-height: 34px !important;
-            background-color: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"} !important;
-            background: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"} !important;
+            font-size: 13px !important;
+            min-height: 38px !important;
+            background-color: {"rgba(255, 255, 255, 0.05)" if dark else "#FFFFFF"} !important;
+            background: {"rgba(255, 255, 255, 0.05)" if dark else "#FFFFFF"} !important;
             color: {c["text"]} !important;
-            border: 1px solid {c["card_border"]} !important;
-            box-shadow: none !important;
+            border: 1px solid {"rgba(255, 255, 255, 0.10)" if dark else "rgba(0, 0, 0, 0.12)"} !important;
+            box-shadow: {"none" if dark else "0 1px 4px rgba(0, 0, 0, 0.05)"} !important;
             transition: all 0.18s ease !important;
+        }}
+        .stApp .stButton button *,
+        .stApp button[data-testid="stBaseButton-secondary"] *,
+        .stApp span[data-testid="stTooltipHoverTarget"] button *,
+        .stApp .stButton button:not([kind="primary"]) p,
+        .stApp button[data-testid="stBaseButton-secondary"] p {{
+            color: {c["text"]} !important;
         }}
         .stButton button:hover,
         button[data-testid="stBaseButton-secondary"]:hover,
         span[data-testid="stTooltipHoverTarget"] button:hover {{
-            background-color: {"rgba(255, 255, 255, 0.09)" if dark else "rgba(0, 0, 0, 0.07)"} !important;
-            background: {"rgba(255, 255, 255, 0.09)" if dark else "rgba(0, 0, 0, 0.07)"} !important;
-            border-color: {card_border_hover} !important;
+            background-color: {"rgba(255, 255, 255, 0.09)" if dark else "#F4F4F5"} !important;
+            background: {"rgba(255, 255, 255, 0.09)" if dark else "#F4F4F5"} !important;
+            border-color: {"rgba(255, 255, 255, 0.20)" if dark else "rgba(0, 0, 0, 0.24)"} !important;
             color: {"#FFFFFF" if dark else "#000000"} !important;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
+            box-shadow: {"0 4px 14px rgba(0, 0, 0, 0.2)" if dark else "0 3px 10px rgba(0, 0, 0, 0.08)"} !important;
         }}
+        .stApp .stButton button:hover *,
+        .stApp button[data-testid="stBaseButton-secondary"]:hover *,
+        .stApp span[data-testid="stTooltipHoverTarget"] button:hover *,
+        .stApp .stButton button:not([kind="primary"]):hover p,
+        .stApp button[data-testid="stBaseButton-secondary"]:hover p {{
+            color: {"#FFFFFF" if dark else "#000000"} !important;
+        }}
+
+        /* Primary Buttons - High Contrast Monochrome Accent in Both Modes */
         .stButton button[kind="primary"],
         button[data-testid="stBaseButton-primary"] {{
-            background-color: {"rgba(255, 255, 255, 0.12)" if dark else "#18181B"} !important;
-            background: {"rgba(255, 255, 255, 0.12)" if dark else "#18181B"} !important;
+            background-color: {"rgba(255, 255, 255, 0.14)" if dark else "#18181B"} !important;
+            background: {"rgba(255, 255, 255, 0.14)" if dark else "#18181B"} !important;
             color: #FFFFFF !important;
             font-weight: 700 !important;
+            font-size: 13px !important;
+            min-height: 38px !important;
+            border-radius: 8px !important;
             border: 1px solid {"rgba(255, 255, 255, 0.22)" if dark else "#18181B"} !important;
+            box-shadow: {"0 2px 10px rgba(0, 0, 0, 0.35)" if dark else "0 2px 8px rgba(0, 0, 0, 0.15)"} !important;
+            transition: all 0.18s ease !important;
+        }}
+        .stApp .stButton button[kind="primary"] *,
+        .stApp button[data-testid="stBaseButton-primary"] *,
+        .stApp .stButton button[kind="primary"] p,
+        .stApp button[data-testid="stBaseButton-primary"] p,
+        .stApp .stButton button[kind="primary"] div[data-testid="stMarkdownContainer"] p,
+        .stApp button[data-testid="stBaseButton-primary"] div[data-testid="stMarkdownContainer"] p {{
+            color: #FFFFFF !important;
+            font-weight: 700 !important;
+        }}
+        .stButton button[kind="primary"]:hover,
+        button[data-testid="stBaseButton-primary"]:hover {{
+            background-color: {"rgba(255, 255, 255, 0.22)" if dark else "#27272A"} !important;
+            background: {"rgba(255, 255, 255, 0.22)" if dark else "#27272A"} !important;
+            border-color: {"rgba(255, 255, 255, 0.35)" if dark else "#27272A"} !important;
+            color: #FFFFFF !important;
+            box-shadow: {"0 4px 16px rgba(255, 255, 255, 0.12)" if dark else "0 4px 14px rgba(0, 0, 0, 0.25)"} !important;
+        }}
+        .stApp .stButton button[kind="primary"]:hover *,
+        .stApp button[data-testid="stBaseButton-primary"]:hover *,
+        .stApp .stButton button[kind="primary"]:hover p,
+        .stApp button[data-testid="stBaseButton-primary"]:hover p,
+        .stApp .stButton button[kind="primary"]:hover div[data-testid="stMarkdownContainer"] p,
+        .stApp button[data-testid="stBaseButton-primary"]:hover div[data-testid="stMarkdownContainer"] p {{
+            color: #FFFFFF !important;
         }}
 
         /* Dividers */

@@ -20,6 +20,7 @@ from frontend.components.styles import get_theme_colors, is_dark_mode
 from frontend.components.metric_card import render_metric_card
 from frontend.components.charts import render_donut_chart
 from frontend.components.status_badge import get_decision_badge_html
+from frontend.components.navbar import navigate_to
 
 
 def render_overview_view():
@@ -370,28 +371,30 @@ def render_overview_view():
     # QUICK DEMO CTA BUTTONS
     # --------------------------------------------------
     st.markdown(
-        f'<div style="height: 1px; background: {c["card_border"]}; margin: 20px 0;"></div>',
+        f'<div style="height: 1px; background: {c["card_border"]}; margin: 28px 0 20px 0;"></div>',
         unsafe_allow_html=True,
     )
     st.markdown("### Quick Navigation & Jury Demo Shortcuts")
+    st.markdown(
+        f'<p style="font-size: 13px; color: {c["text_muted"]}; margin: -4px 0 16px 0;">'
+        f'Direct one-click jumps into high-priority demo evaluation pathways.'
+        f'</p>',
+        unsafe_allow_html=True,
+    )
     cta1, cta2, cta3, cta4 = st.columns(4)
 
     with cta1:
-        if st.button("⚡ Request Simulator (MISS → HIT)", width="stretch", type="primary"):
-            st.session_state["active_nav"] = "Simulator"
-            st.rerun()
+        if st.button("⚡ Request Simulator (MISS → HIT)", width="stretch", type="primary", key="quick_nav_simulator"):
+            navigate_to("Simulator")
 
     with cta2:
-        if st.button("📊 Cache Performance Details", width="stretch"):
-            st.session_state["active_nav"] = "Performance"
-            st.rerun()
+        if st.button("📊 Cache Performance Details", width="stretch", key="quick_nav_performance"):
+            navigate_to("Performance")
 
     with cta3:
-        if st.button("⚙️ System State & Window Reset", width="stretch"):
-            st.session_state["active_nav"] = "System"
-            st.rerun()
+        if st.button("⚙️ System State & Window Reset", width="stretch", key="quick_nav_system"):
+            navigate_to("System")
 
     with cta4:
-        if st.button("🏆 Policy Benchmarks Lab", width="stretch"):
-            st.session_state["active_nav"] = "Benchmarks"
-            st.rerun()
+        if st.button("🏆 Policy Benchmarks Lab", width="stretch", key="quick_nav_benchmarks"):
+            navigate_to("Benchmarks")

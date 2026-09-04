@@ -1,6 +1,7 @@
 import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
+from typing import Any
 from frontend.components.styles import get_theme_colors
 
 
@@ -143,9 +144,9 @@ def render_multi_line_chart(
 
 
 def render_comparison_bar_chart(
-    categories: list,
-    values_dict: dict,
-    title: str,
+    categories: list[str],
+    values_dict: dict[str, list[Any]],
+    title: str = "",
     y_title: str = "",
     unit: str = "",
     height: int = 340,
@@ -158,12 +159,23 @@ def render_comparison_bar_chart(
 
     for idx, (label, vals) in enumerate(values_dict.items()):
         color = palette[idx % len(palette)]
+        clean_y = []
+        text_labels = []
+        for v in vals:
+            try:
+                num = float(str(v).replace("%", "").replace("$", "").strip())
+                clean_y.append(num)
+                text_labels.append(f"{num:.1f}{unit}")
+            except (ValueError, TypeError):
+                clean_y.append(0.0)
+                text_labels.append(f"{v}{unit}")
+
         fig.add_bar(
             x=categories,
-            y=vals,
+            y=clean_y,
             name=label,
             marker=dict(color=color, cornerradius=4),
-            text=[f"{v:.1f}{unit}" for v in vals],
+            text=text_labels,
             textposition="outside",
             textfont=dict(size=11, color=c["chart_font"]),
             hovertemplate=f"{label}: <b>%{{y:.1f}}{unit}</b><extra></extra>",

@@ -218,7 +218,7 @@ benchmark_results = [
         "p95_latency_ms": 49.8,
         "backend_calls": 380,
         "cost": 22.8,
-        "eviction_thrash_rate": "18.2%",
+        "eviction_thrash_rate": 18.2,
     },
     {
         "policy": "LRU (Baseline)",
@@ -226,7 +226,7 @@ benchmark_results = [
         "p95_latency_ms": 42.5,
         "backend_calls": 312,
         "cost": 18.4,
-        "eviction_thrash_rate": "14.5%",
+        "eviction_thrash_rate": 14.5,
     },
     {
         "policy": "LFU",
@@ -234,7 +234,7 @@ benchmark_results = [
         "p95_latency_ms": 38.2,
         "backend_calls": 276,
         "cost": 16.2,
-        "eviction_thrash_rate": "11.8%",
+        "eviction_thrash_rate": 11.8,
     },
     {
         "policy": "GDS (Greedy Dual)",
@@ -242,7 +242,7 @@ benchmark_results = [
         "p95_latency_ms": 34.8,
         "backend_calls": 241,
         "cost": 14.8,
-        "eviction_thrash_rate": "7.9%",
+        "eviction_thrash_rate": 7.9,
     },
     {
         "policy": "Adaptive Engine (VH26)",
@@ -250,7 +250,7 @@ benchmark_results = [
         "p95_latency_ms": 27.3,
         "backend_calls": 156,
         "cost": 11.2,
-        "eviction_thrash_rate": "2.1%",
+        "eviction_thrash_rate": 2.1,
     },
 ]
 
