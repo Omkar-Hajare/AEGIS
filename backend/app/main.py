@@ -1,5 +1,6 @@
 from fastapi import Depends, FastAPI
 
+from api.routes.adaptive import router as adaptive_router
 from api.routes.data import router as data_router
 from api.routes.telemetry import router as telemetry_router
 from app.config import Settings, settings
@@ -12,6 +13,7 @@ app = FastAPI(
 
 app.include_router(data_router)
 app.include_router(telemetry_router)
+app.include_router(adaptive_router)
 
 
 @app.get("/health")
