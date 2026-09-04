@@ -15,9 +15,42 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 try:
     from adaptive.engine.decision_engine import DecisionEngine
+    from adaptive.service import AdaptiveService
 except ImportError:
     from backend.adaptive.engine.decision_engine import (
         DecisionEngine,  # type: ignore[no-redef]
+    )
+    from backend.adaptive.service import (
+        AdaptiveService,  # type: ignore[no-redef]
+    )
+
+try:
+    from api.routes.data import cache_manager as runtime_cache_manager
+except ImportError:
+    from backend.api.routes.data import (
+        cache_manager as runtime_cache_manager,  # type: ignore[no-redef]
+    )
+
+try:
+    from cache.manager import CacheManager
+except ImportError:
+    from backend.cache.manager import (
+        CacheManager,  # type: ignore[no-redef]
+    )
+
+try:
+    from telemetry.collector import (
+        TelemetryCollector,
+    )
+    from telemetry.collector import (
+        telemetry_collector as runtime_telemetry_collector,
+    )
+except ImportError:
+    from backend.telemetry.collector import (
+        TelemetryCollector,  # type: ignore[no-redef]
+    )
+    from backend.telemetry.collector import (
+        telemetry_collector as runtime_telemetry_collector,  # type: ignore[no-redef]
     )
 
 from contracts.schemas import (
@@ -33,6 +66,29 @@ router = APIRouter(prefix="/adaptive", tags=["adaptive"])
 def get_decision_engine() -> DecisionEngine:
     """Dependency provider for DecisionEngine, allowing mock/fake override in tests."""
     return DecisionEngine()
+
+
+def get_runtime_cache_manager() -> CacheManager:
+    """Dependency provider returning the shared runtime CacheManager."""
+    return runtime_cache_manager
+
+
+def get_runtime_telemetry_collector() -> TelemetryCollector:
+    """Dependency provider returning the shared runtime TelemetryCollector."""
+    return runtime_telemetry_collector
+
+
+def get_adaptive_service(
+    cache_mgr: CacheManager = Depends(get_runtime_cache_manager),  # noqa: B008
+    collector: TelemetryCollector = Depends(get_runtime_telemetry_collector),  # noqa: B008
+    engine: DecisionEngine = Depends(get_decision_engine),  # noqa: B008
+) -> AdaptiveService:
+    """Dependency provider for AdaptiveService wired with shared runtime state."""
+    return AdaptiveService(
+        cache_manager=cache_mgr,
+        telemetry_collector=collector,
+        decision_engine=engine,
+    )
 
 
 class DecisionRequest(BaseModel):
@@ -137,6 +193,59 @@ def compute_decision(
             refresh_after_seconds=request.refresh_after_seconds,
             decision_id=request.decision_id,
             capacity_mode=request.capacity_mode,
+        )
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get(
+    "/runtime-decision",
+    response_model=Decision,
+    summary="Get Runtime Adaptive Decision",
+    description="Retrieve the current adaptive cache decision derived from live telemetry and cache state.",
+)
+def get_runtime_decision(
+    min_capacity_bytes: int = 1_000_000,
+    max_capacity_bytes: int = 10_000_000,
+    refresh_after_seconds: float | None = None,
+    capacity_mode: str = "rule_based",
+    now: datetime | None = None,
+    decision_id: str | None = None,
+    service: AdaptiveService = Depends(get_adaptive_service),  # noqa: B008
+) -> Decision:
+    """Retrieve current adaptive cache decision using live runtime telemetry and cache state."""
+    if min_capacity_bytes <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"min_capacity_bytes must be greater than 0, got {min_capacity_bytes}",
+        )
+    if max_capacity_bytes <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"max_capacity_bytes must be greater than 0, got {max_capacity_bytes}",
+        )
+    if min_capacity_bytes > max_capacity_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"min_capacity_bytes ({min_capacity_bytes}) must be <= max_capacity_bytes ({max_capacity_bytes})",
+        )
+    if refresh_after_seconds is not None and refresh_after_seconds <= 0.0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"refresh_after_seconds must be greater than 0, got {refresh_after_seconds}",
+        )
+
+    try:
+        return service.decide(
+            now=now,
+            min_capacity_bytes=min_capacity_bytes,
+            max_capacity_bytes=max_capacity_bytes,
+            refresh_after_seconds=refresh_after_seconds,
+            decision_id=decision_id,
+            capacity_mode=capacity_mode,
         )
     except (ValueError, TypeError) as exc:
         raise HTTPException(
