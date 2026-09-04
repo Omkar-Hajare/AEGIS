@@ -9,7 +9,7 @@ from cache.metadata import CacheObjectMetadata, calculate_payload_size_bytes
 
 class TestCacheMetadata(unittest.TestCase):
     def test_create_metadata_defaults(self):
-        """Create a new metadata object and verify v1 and default counters."""
+        """Create a new metadata object and verify v1, default counters, and UTC timezone."""
         meta = CacheObjectMetadata(
             key="product:1",
             size_bytes=128,
@@ -24,23 +24,29 @@ class TestCacheMetadata(unittest.TestCase):
         self.assertEqual(meta.hit_count, 0)
         self.assertIsInstance(meta.created_at, datetime)
         self.assertIsInstance(meta.last_accessed, datetime)
-        self.assertIsNotNone(meta.created_at.tzinfo)
-        self.assertIsNotNone(meta.last_accessed.tzinfo)
+        self.assertEqual(meta.created_at.tzinfo, timezone.utc)
+        self.assertEqual(meta.last_accessed.tzinfo, timezone.utc)
 
     def test_record_access_updates_counter_and_timestamp(self):
-        """Verify record_access updates access_count and last_accessed."""
-        meta = CacheObjectMetadata(key="item:1", size_bytes=50, retrieval_cost_ms=10.0)
-        initial_access_count = meta.access_count
-        initial_timestamp = meta.last_accessed
+        """Verify record_access updates access_count and last_accessed deterministically."""
+        base_time = datetime(2026, 9, 4, 12, 0, 0, tzinfo=timezone.utc)
+        later_time = datetime(2026, 9, 4, 12, 0, 1, tzinfo=timezone.utc)
+        meta = CacheObjectMetadata(
+            key="item:1",
+            size_bytes=50,
+            retrieval_cost_ms=10.0,
+            created_at=base_time,
+            last_accessed=base_time,
+        )
+        self.assertEqual(meta.access_count, 1)
+        self.assertEqual(meta.last_accessed, base_time)
 
-        time.sleep(0.002)
-        meta.record_access()
-
-        self.assertEqual(meta.access_count, initial_access_count + 1)
-        self.assertGreaterEqual(meta.last_accessed, initial_timestamp)
+        meta.record_access(now=later_time)
+        self.assertEqual(meta.access_count, 2)
+        self.assertEqual(meta.last_accessed, later_time)
 
     def test_record_hit_updates_access_and_hit_count(self):
-        """Verify record_hit updates access_count and hit_count."""
+        """Verify record_hit updates access_count and hit_count, preserving retrieval latency."""
         meta = CacheObjectMetadata(key="item:2", size_bytes=50, retrieval_cost_ms=10.0)
         initial_access = meta.access_count
         initial_hits = meta.hit_count
@@ -51,6 +57,7 @@ class TestCacheMetadata(unittest.TestCase):
         self.assertEqual(meta.access_count, initial_access + 1)
         self.assertEqual(meta.hit_count, initial_hits + 1)
         self.assertEqual(meta.miss_count, initial_misses)
+        self.assertEqual(meta.retrieval_cost_ms, 10.0, "HIT must not change retrieval latency")
 
     def test_record_miss_updates_access_and_miss_count(self):
         """Verify record_miss updates access_count and miss_count."""
@@ -64,6 +71,7 @@ class TestCacheMetadata(unittest.TestCase):
         self.assertEqual(meta.access_count, initial_access + 1)
         self.assertEqual(meta.miss_count, initial_misses + 1)
         self.assertEqual(meta.hit_count, initial_hits)
+        self.assertEqual(meta.retrieval_cost_ms, 10.0, "MISS alone does not alter retrieval latency until recorded")
 
     def test_record_backend_retrieval_updates_latency(self):
         """Verify backend retrieval records latency."""
@@ -72,6 +80,14 @@ class TestCacheMetadata(unittest.TestCase):
 
         meta.record_backend_retrieval(42.8)
         self.assertEqual(meta.retrieval_cost_ms, 42.8)
+
+    def test_metadata_storage_independence(self):
+        """Verify CacheObjectMetadata is independent from actual cache storage mechanism."""
+        meta = CacheObjectMetadata(key="independent:key", size_bytes=100, retrieval_cost_ms=20.0)
+        meta.record_hit()
+        meta.record_miss()
+        self.assertEqual(meta.key, "independent:key")
+        self.assertEqual(meta.access_count, 3)
 
     def test_size_calculation(self):
         """Verify calculate_payload_size_bytes returns deterministic UTF-8 byte length."""

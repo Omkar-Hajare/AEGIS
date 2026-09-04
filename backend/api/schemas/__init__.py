@@ -1,3 +1,13 @@
-from api.schemas.telemetry import TelemetryObservationResponse, WindowResetResponse
+from api.schemas.telemetry import (
+    SystemStateResponse,
+    TelemetryObservationResponse,
+    WindowResetResponse,
+    WorkloadStateResponse,
+)
 
-__all__ = ["TelemetryObservationResponse", "WindowResetResponse"]
+__all__ = [
+    "SystemStateResponse",
+    "TelemetryObservationResponse",
+    "WindowResetResponse",
+    "WorkloadStateResponse",
+]
