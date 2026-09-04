@@ -34,7 +34,7 @@ def render_cost_analysis_view():
         f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
-        f'Cost Analysis & <span style="color: {c["cyan"]} !important;">Economic Value Density</span>'
+        f'Cost Analysis & <span style="color: {c["text_muted"]} !important; font-weight: 600;">Economic Value Density</span>'
         f'</h1>'
         f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 840px;">'
         f'Evaluate cache economics through measured backend retrieval latency and compute offload, grounding decisions in cost-to-recompute metrics.'
@@ -101,7 +101,7 @@ def render_cost_analysis_view():
             subtitle=f"{hits} hits &times; {latency_ms:.1f}ms",
             tag="[DERIVED]",
             delta="Aggregated latency saved",
-            delta_color=c["cyan"],
+            delta_color=c["emerald"],
             tooltip="Derived metric: total seconds of backend latency avoided by cache hits in this window.",
         )
 
@@ -133,7 +133,7 @@ def render_cost_analysis_view():
         formula_html = (
             f'<div class="decision-card" style="padding: 18px; margin-bottom: 14px; border-radius: 10px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
             f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">OBJECT UTILITY VALUE (GDSF FORMULA)</span>'
-            f'<div style="font-family: monospace; font-size: 16px; font-weight: 800; color: {c["cyan"]}; margin: 10px 0; background: {c["card_bg_elevated"]}; padding: 10px 14px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
+            f'<div style="font-family: monospace; font-size: 16px; font-weight: 800; color: {c["text"]}; margin: 10px 0; background: {c["card_bg_elevated"]}; padding: 10px 14px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
             f'Utility(i) = L + (Cost(i) &times; Freq(i)) / Size(i)'
             f'</div>'
             f'<ul style="font-size: 12px; color: {c["text_muted"]}; margin: 8px 0 0 18px; line-height: 1.6;">'
@@ -156,15 +156,15 @@ def render_cost_analysis_view():
         tax_html = (
             f'<div class="hero-card" style="padding: 18px; border-radius: 10px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
             f'<div style="margin-bottom: 12px;">'
-            f'<span style="background: rgba(16, 185, 129, 0.15); color: {c["emerald"]}; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">[MEASURED]</span>'
+            f'<span style="background: {"rgba(34, 197, 94, 0.12)" if c["is_dark"] else "rgba(34, 197, 94, 0.10)"}; color: {c["emerald"]}; border: 1px solid {"rgba(34, 197, 94, 0.25)" if c["is_dark"] else "rgba(34, 197, 94, 0.20)"}; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">[MEASURED]</span>'
             f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px;">Directly gathered telemetry: backend retrieval duration (ms), total requests, cache hits, backend calls.</div>'
             f'</div>'
             f'<div style="margin-bottom: 12px;">'
-            f'<span style="background: rgba(56, 189, 248, 0.15); color: {c["cyan"]}; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">[DERIVED]</span>'
+            f'<span style="background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; color: {c["text_muted"]}; border: 1px solid {c["card_border"]}; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">[DERIVED]</span>'
             f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px;">Computed telemetry combinations: cumulative time saved (hits &times; latency), hit/miss percentages, offload ratio.</div>'
             f'</div>'
             f'<div>'
-            f'<span style="background: rgba(168, 85, 247, 0.15); color: {c["purple"]}; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">[PROJECTED]</span>'
+            f'<span style="background: {"rgba(167, 139, 250, 0.12)" if c["is_dark"] else "rgba(167, 139, 250, 0.10)"}; color: {c["purple"]}; border: 1px solid {"rgba(167, 139, 250, 0.25)" if c["is_dark"] else "rgba(167, 139, 250, 0.20)"}; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">[PROJECTED]</span>'
             f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px;">Simulated economic savings: waiting for Person 1 adaptive engine integration and backend monetary API exposure.</div>'
             f'</div>'
             f'</div>'

@@ -39,14 +39,14 @@ def render_request_simulator_view():
         f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
-        f'Request Simulator & <span style="color: {c["cyan"]} !important;">Cache Lifecycle Harness</span>'
+        f'Request Simulator & <span style="color: {c["text_muted"]} !important; font-weight: 600;">Cache Lifecycle Harness</span>'
         f'</h1>'
         f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 840px;">'
         f'Issue live requests against backend REST endpoints to observe real-time latency differences and demonstrate first-request MISS followed by repeated-request HIT.'
         f'</p>'
         f'</div>'
         f'<div style="display: flex; align-items: center; padding-top: 6px;">'
-        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(16, 185, 129, 0.12); color: {c["emerald"]}; border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
+        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(34, 197, 94, 0.10); color: {c["emerald"]}; border: 1px solid rgba(34, 197, 94, 0.22); border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
         f'LIVE REST ENDPOINTS &bull; FASTAPI'
         f'</span>'
         f'</div>'
@@ -84,7 +84,7 @@ def render_request_simulator_view():
             subtitle="Observed backend penalty",
             tag="PENALTY",
             delta="Zero on Cache Hit",
-            delta_color=c["cyan"],
+            delta_color=c["text_muted"],
         )
     with t4:
         last_res = st.session_state.get("sim_last_result")
@@ -228,8 +228,8 @@ def render_request_simulator_view():
         curr_target = st.session_state.get("sim_last_key", "None")
         if curr_target and curr_target != "None":
             st.markdown(
-                f'<div style="background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px 14px; margin-top: 10px;">'
-                f'<span style="font-size: 11px; font-weight: 700; color: {c["cyan"]}; text-transform: uppercase;">Instant Replay Target:</span>'
+                f'<div style="background: {"rgba(255, 255, 255, 0.04)" if c["is_dark"] else "rgba(0, 0, 0, 0.03)"}; border: 1px dashed {c["card_border"]}; border-radius: 8px; padding: 10px 14px; margin-top: 10px;">'
+                f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">Instant Replay Target:</span>'
                 f'<div style="font-family: monospace; font-size: 13px; font-weight: 700; color: {c["text"]}; margin: 2px 0 8px 0;">{curr_target}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
@@ -259,9 +259,9 @@ def render_request_simulator_view():
             elapsed = last_res.get("elapsed_ms", 0.0)
             is_likely_hit = elapsed < 12.0
             verdict_badge = (
-                f'<span style="background: rgba(16, 185, 129, 0.15); color: {c["emerald"]}; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 800;">● CACHE HIT (RAM SERVED)</span>'
+                f'<span style="background: {"rgba(34, 197, 94, 0.12)" if c["is_dark"] else "rgba(34, 197, 94, 0.10)"}; color: {c["emerald"]}; border: 1px solid {"rgba(34, 197, 94, 0.25)" if c["is_dark"] else "rgba(34, 197, 94, 0.20)"}; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 800;">● CACHE HIT (RAM SERVED)</span>'
                 if is_likely_hit
-                else f'<span style="background: rgba(245, 158, 11, 0.15); color: {c["amber"]}; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 800;">○ CACHE MISS (BACKEND COMPUTED)</span>'
+                else f'<span style="background: {"rgba(239, 68, 68, 0.12)" if c["is_dark"] else "rgba(239, 68, 68, 0.10)"}; color: {c["rose"]}; border: 1px solid {"rgba(239, 68, 68, 0.25)" if c["is_dark"] else "rgba(239, 68, 68, 0.20)"}; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 800;">○ CACHE MISS (BACKEND COMPUTED)</span>'
             )
             verdict_explanation = (
                 "Instant turnaround (&lt;12ms) confirms entry was fulfilled directly from Tier-1 RAM without re-invoking backend."
@@ -278,7 +278,7 @@ def render_request_simulator_view():
                 f'<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; text-align: center;">'
                 f'<div style="background: {c["card_bg_elevated"]}; padding: 8px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
                 f'<span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase; display: block;">Round Trip</span>'
-                f'<div style="font-size: 15px; font-weight: 800; color: {c["cyan"]};">{elapsed:.1f} ms</div>'
+                f'<div style="font-size: 15px; font-weight: 800; color: {c["text"]};">{elapsed:.1f} ms</div>'
                 f'</div>'
                 f'<div style="background: {c["card_bg_elevated"]}; padding: 8px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
                 f'<span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase; display: block;">HTTP Status</span>'

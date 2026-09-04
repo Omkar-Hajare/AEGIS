@@ -34,12 +34,12 @@ def render_workload_view():
         f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">'
-        f'<span style="font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 4px; padding: 2px 8px;">'
+        f'<span style="font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; color: {c["text_muted"]}; border: 1px solid {c["card_border"]}; border-radius: 4px; padding: 2px 8px;">'
         f'GET /telemetry/workload &bull; REST API CONTRACT'
         f'</span>'
         f'</div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
-        f'Workload <span style="color: {c["cyan"]} !important;">Observability & Dynamics</span>'
+        f'Workload <span style="color: {c["text_muted"]} !important; font-weight: 600;">Observability & Dynamics</span>'
         f'</h1>'
         f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 850px;">'
         f'Live observation of ingress request rate, cache hit/miss distributions, downstream latency penalties, and traffic classification.'
@@ -53,7 +53,7 @@ def render_workload_view():
     # WORKLOAD OBSERVABILITY EXPLANATORY PANEL (MANDATORY SPEC)
     # --------------------------------------------------
     expl_panel_html = (
-        f'<div class="hero-card" style="padding: 14px 18px; margin-bottom: 20px; border-left: 4px solid {c["cyan"]} !important;">'
+        f'<div class="hero-card" style="padding: 14px 18px; margin-bottom: 20px; border: 1px solid {c["card_border"]} !important;">'
         f'<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">'
         f'<span style="font-size: 15px;">🔍</span>'
         f'<strong style="font-size: 13.5px; color: {c["text"]};">Signal Observation Framework</strong>'
@@ -86,7 +86,7 @@ def render_workload_view():
             tag="VELOCITY",
             tooltip="Live request ingestion rate computed over sliding observation window.",
             progress_value=min(1.0, float(req_rate) / 10.0) if req_rate > 0 else 0.05,
-            progress_color=c["cyan"],
+            progress_color=c["emerald"],
             is_floating=True,
         )
 
@@ -98,7 +98,7 @@ def render_workload_view():
             tag="HIT RATIO",
             tooltip="Proportion of incoming requests satisfied directly by the cache.",
             progress_value=min(1.0, max(0.0, float(hit_rate))),
-            progress_color="#10B981",
+            progress_color=c["emerald"],
         )
 
     with k3:
@@ -109,7 +109,7 @@ def render_workload_view():
             tag="MISS RATIO",
             tooltip="Proportion of requests that missed cache and hit the database/recompute layer.",
             progress_value=min(1.0, max(0.0, float(miss_rate))),
-            progress_color=c["amber"] if miss_rate > 0.3 else c["cyan"],
+            progress_color=c["rose"],
         )
 
     with k4:
@@ -134,7 +134,7 @@ def render_workload_view():
     has_classification = workload_type is not None and str(workload_type).strip() != ""
     classification_display = str(workload_type) if has_classification else "Not classified yet"
     status_tag = "ACTIVE CLASSIFICATION" if has_classification else "INFERENCE ENGINE PENDING"
-    status_color = "#10B981" if has_classification else c["amber"]
+    status_color = c["emerald"] if has_classification else c["amber"]
     badge_cls = "badge-active" if has_classification else "badge-hot"
 
     col_class, col_meta = st.columns([1.3, 1.0])
@@ -155,7 +155,7 @@ def render_workload_view():
         if has_classification:
             class_html += (
                 f'The backend classifier evaluated window access velocity and categorized active traffic as '
-                f'<strong style="color:{c["cyan"]};">{classification_display}</strong>.'
+                f'<strong style="color:{c["text"]};">{classification_display}</strong>.'
             )
         else:
             class_html += (
@@ -189,7 +189,7 @@ def render_workload_view():
         )
         if raw_metrics:
             metrics_html += (
-                f'<pre style="background:{c["card_bg_elevated"]}; border:1px solid {c["card_border"]}; padding:10px; border-radius:6px; font-size:11px; color:{c["cyan"]}; max-height:160px; overflow-y:auto;">'
+                f'<pre style="background:{c["card_bg_elevated"]}; border:1px solid {c["card_border"]}; padding:10px; border-radius:6px; font-size:11px; color:{c["text"]}; max-height:160px; overflow-y:auto;">'
                 f'{str(raw_metrics)}'
                 f'</pre>'
             )

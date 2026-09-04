@@ -8,7 +8,7 @@ def render_metric_card(
     subtitle: str = "",
     tag: str = "",
     delta: str = "",
-    delta_color: str = "#10B981",
+    delta_color: str = "#22C55E",
     tooltip: str = "",
     progress_pct: float | None = None,
     progress_value: float | None = None,
@@ -24,18 +24,19 @@ def render_metric_card(
         if 0.0 <= effective_progress <= 1.0:
             effective_progress = effective_progress * 100.0
 
-
     # Adapt delta color in light mode for maximum legibility
     actual_delta_color = delta_color
     if not c["is_dark"]:
         if delta_color in ("#F59E0B", "amber"):
-            actual_delta_color = "#B45309"
-        elif delta_color in ("#F43F5E", "#rose", "red"):
+            actual_delta_color = "#D97706"
+        elif delta_color in ("#EF4444", "#F43F5E", "red", "rose"):
             actual_delta_color = "#DC2626"
-        elif delta_color in ("#38BDF8", "cyan"):
-            actual_delta_color = "#0284C7"
-        elif delta_color in ("#A855F7", "purple"):
+        elif delta_color in ("#22C55E", "#10B981", "green", "emerald"):
+            actual_delta_color = "#16A34A"
+        elif delta_color in ("#A78BFA", "#A855F7", "purple"):
             actual_delta_color = "#7C3AED"
+        elif delta_color in ("#60A5FA", "#38BDF8", "cyan", "blue"):
+            actual_delta_color = "#2563EB"
 
     delta_html = (
         f'<div style="font-size:11.5px;font-weight:600;color:{actual_delta_color};margin-top:4px;display:flex;align-items:center;gap:4px;">'
@@ -45,7 +46,7 @@ def render_metric_card(
     )
 
     tag_html = (
-        f'<span style="font-size:9.5px;font-weight:700;background:rgba(56,189,248,0.12);color:{c["cyan"]};border:1px solid rgba(56,189,248,0.25);border-radius:4px;padding:2px 6px;letter-spacing:0.5px;text-transform:uppercase;">{tag}</span>'
+        f'<span style="font-size:9.5px;font-weight:700;background:{"rgba(255,255,255,0.06)" if c["is_dark"] else "rgba(0,0,0,0.04)"};color:{c["text_muted"]};border:1px solid {c["card_border"]};border-radius:4px;padding:2px 6px;letter-spacing:0.5px;text-transform:uppercase;">{tag}</span>'
         if tag
         else ""
     )
@@ -59,8 +60,8 @@ def render_metric_card(
     bar_html = ""
     if effective_progress is not None:
         p_pct = min(100.0, max(0.0, float(effective_progress)))
-        p_col = progress_color or c["cyan"]
-        bar_bg = "#1E293B" if c["is_dark"] else "#E2E8F0"
+        p_col = progress_color or c["emerald"]
+        bar_bg = "rgba(255, 255, 255, 0.08)" if c["is_dark"] else "rgba(0, 0, 0, 0.08)"
         bar_html = (
             f'<div style="background:{bar_bg};height:4px;border-radius:2px;overflow:hidden;margin-top:8px;">'
             f'<div style="background:{p_col};width:{p_pct}%;height:100%;border-radius:2px;"></div>'
@@ -80,7 +81,7 @@ def render_metric_card(
         f'<div style="font-size:26px;font-weight:800;color:{c["text"]};margin-top:6px;letter-spacing:-0.6px;line-height:1.1;">{value}</div>'
         f'{delta_html}'
         f'{bar_html}'
-        f'<div style="color:{c["text_subtle"]};font-size:11px;margin-top:4px;font-weight:500;">{subtitle}</div>'
+        f'<div style="color:{c["text_muted"]};font-size:11px;margin-top:4px;font-weight:500;">{subtitle}</div>'
         f'</div>'
         f'</div>'
     )

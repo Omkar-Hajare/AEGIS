@@ -45,14 +45,14 @@ def render_adaptive_decisions_view():
         f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
-        f'Adaptive Decisions & <span style="color: {c["cyan"]} !important;">Arbitration Engine</span>'
+        f'Adaptive Decisions & <span style="color: {c["text_muted"]} !important; font-weight: 600;">Arbitration Engine</span>'
         f'</h1>'
         f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 820px;">'
         f'Real-time evaluation of multi-signal utility density, dynamic weight sensitivity arbitration, and continuous decision auditing.'
         f'</p>'
         f'</div>'
         f'<div style="display: flex; align-items: center; padding-top: 6px;">'
-        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
+        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; color: {c["text_muted"]}; border: 1px solid {c["card_border"]}; border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
         f'MULTI-FACTOR GDSF &bull; DECISION ARBITRATION'
         f'</span>'
         f'</div>'
@@ -64,7 +64,7 @@ def render_adaptive_decisions_view():
     # HONEST INTEGRATION NOTICE (PERSON 1 BOUNDARY)
     # --------------------------------------------------
     notice_html = (
-        f'<div class="hero-card" style="padding: 12px 18px; margin-bottom: 20px; border-left: 4px solid {c["cyan"]} !important;">'
+        f'<div class="hero-card" style="padding: 12px 18px; margin-bottom: 20px; border: 1px solid {c["card_border"]} !important; border-left: 3px solid {c["purple"]} !important;">'
         f'<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">'
         f'<div style="display: flex; align-items: center; gap: 8px;">'
         f'<span style="font-size: 14px;">⚡</span>'
@@ -87,7 +87,7 @@ def render_adaptive_decisions_view():
             <h4 style="margin: 0; font-size: 1rem; font-weight: 700; color: {c['text']};">
                 Active Telemetry Signals Feeding Arbiter
             </h4>
-            <span style="font-size: 11px; color: {c['cyan']}; font-weight: 600;">LIVE INPUT VECTORS</span>
+            <span style="font-size: 11px; color: {c['text_muted']}; font-weight: 600;">LIVE INPUT VECTORS</span>
         </div>""",
         unsafe_allow_html=True,
     )
@@ -96,7 +96,7 @@ def render_adaptive_decisions_view():
         st.markdown(
             f"""<div class="status-card" style="padding: 10px 12px;">
                 <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">REQUEST VELOCITY</span>
-                <div style="font-size: 15px; font-weight: 800; color: {c['cyan']};">{format_request_rate(obs.get("request_rate", 0.0))}</div>
+                <div style="font-size: 15px; font-weight: 800; color: {c['text']};">{format_request_rate(obs.get("request_rate", 0.0))}</div>
             </div>""",
             unsafe_allow_html=True,
         )
@@ -104,7 +104,7 @@ def render_adaptive_decisions_view():
         st.markdown(
             f"""<div class="status-card" style="padding: 10px 12px;">
                 <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">CURRENT HIT RATIO</span>
-                <div style="font-size: 15px; font-weight: 800; color: #10B981;">{format_percentage(obs.get("hit_rate", 0.0))}</div>
+                <div style="font-size: 15px; font-weight: 800; color: {c['emerald']};">{format_percentage(obs.get("hit_rate", 0.0))}</div>
             </div>""",
             unsafe_allow_html=True,
         )
@@ -136,11 +136,11 @@ def render_adaptive_decisions_view():
             subtitle="Cost + Latency + Size aware",
             tag="ALGORITHM",
             delta="Adaptive GDSF",
-            delta_color=c["cyan"],
+            delta_color=c["purple"],
             is_floating=True,
             tooltip="Generalized Greedy Dual-Size Frequency (GDSF) with dynamic inflation clock.",
             progress_value=0.92,
-            progress_color=c["cyan"],
+            progress_color=c["purple"],
         )
     with m2:
         render_metric_card(
@@ -149,10 +149,10 @@ def render_adaptive_decisions_view():
             subtitle="+28.4% ROI threshold met",
             tag="ACTION",
             delta="Triggered by memory pressure",
-            delta_color="#10B981",
+            delta_color=c["emerald"],
             tooltip="Current active intervention dispatched by the engine.",
             progress_value=0.85,
-            progress_color="#10B981",
+            progress_color=c["emerald"],
         )
     with m3:
         render_metric_card(
@@ -161,10 +161,10 @@ def render_adaptive_decisions_view():
             subtitle="From 384 MB baseline",
             tag="CAPACITY",
             delta="+128 MB Elastic Scaling",
-            delta_color=c["cyan"],
+            delta_color=c["text_muted"],
             tooltip="Recommended Tier-1 RAM allocation to maintain >85% hit rate under active traffic.",
             progress_value=0.75,
-            progress_color=c["cyan"],
+            progress_color=c["text_muted"],
         )
     with m4:
         render_metric_card(
@@ -173,11 +173,11 @@ def render_adaptive_decisions_view():
             subtitle="Net API recompute avoidance",
             tag="SAVINGS",
             delta="+$172.80 / day run-rate",
-            delta_color="#F59E0B",
+            delta_color=c["emerald"],
             is_floating=True,
             tooltip="Direct dollars saved by shielding high-cost model inference and DB queries from eviction.",
             progress_value=0.88,
-            progress_color="#F59E0B",
+            progress_color=c["emerald"],
         )
 
     # --------------------------------------------------

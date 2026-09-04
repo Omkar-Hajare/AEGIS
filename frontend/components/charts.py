@@ -74,14 +74,14 @@ def render_line_chart(
 ):
     """Render a modern, ultra-readable spline line chart with area shading."""
     c = get_theme_colors()
-    line_color = color or c["cyan"]
+    line_color = color or c["emerald"]
 
     if line_color.startswith("#"):
         hex_val = line_color.lstrip("#")
         r, g, b = tuple(int(hex_val[i : i + 2], 16) for i in (0, 2, 4))
-        fill_color = f"rgba({r}, {g}, {b}, 0.12)"
+        fill_color = f"rgba({r}, {g}, {b}, 0.08)"
     else:
-        fill_color = "rgba(56, 189, 248, 0.12)"
+        fill_color = "rgba(34, 197, 94, 0.08)"
 
     fig = go.Figure()
 
@@ -94,7 +94,7 @@ def render_line_chart(
         marker=dict(
             size=6,
             color=line_color,
-            line=dict(width=1.5, color="#FFFFFF" if c["is_dark"] else "#0F172A"),
+            line=dict(width=1.5, color="#050505" if c["is_dark"] else "#FFFFFF"),
         ),
         hovertemplate=f"<b>%{{y:.1f}}{unit}</b><extra></extra>",
     )
@@ -118,9 +118,9 @@ def render_multi_line_chart(
     unit: str = "",
     height: int = 340,
 ):
-    """Render multiple comparison lines with distinct high-contrast colors."""
+    """Render multiple comparison lines with distinct semantic high-contrast colors."""
     c = get_theme_colors()
-    palette = [c["cyan"], c["amber"], c["emerald"], c["purple"], c["rose"]]
+    palette = [c["emerald"], c["rose"], c["amber"], c["purple"], c["text_muted"]]
 
     fig = go.Figure()
 
@@ -152,7 +152,7 @@ def render_comparison_bar_chart(
 ):
     """Render grouped or single bar chart with direct value callouts on bars."""
     c = get_theme_colors()
-    palette = [c["emerald"], c["cyan"], c["amber"], c["purple"], c["rose"]]
+    palette = [c["emerald"], c["amber"], c["purple"], c["rose"], c["text_muted"]]
 
     fig = go.Figure()
 
@@ -197,9 +197,9 @@ def render_scatter_bubble_chart(
     status_colors = {
         "Protected (High Cost)": c["emerald"],
         "Protected (Locked)": c["emerald"],
-        "Refreshed": c["emerald"],
+        "Refreshed": c["amber"],
         "Hot": c["amber"],
-        "Active": c["cyan"],
+        "Active": c["text_muted"],
         "At Risk (Large Memory)": c["rose"],
         "Eviction Candidate": c["rose"],
         "Stale / Expiring": c["text_subtle"],
@@ -207,7 +207,7 @@ def render_scatter_bubble_chart(
 
     for status_val in df[color_col].unique():
         sub_df = df[df[color_col] == status_val]
-        color = status_colors.get(status_val, c["cyan"])
+        color = status_colors.get(status_val, c["text_muted"])
 
         fig.add_trace(
             go.Scatter(
@@ -223,7 +223,7 @@ def render_scatter_bubble_chart(
                     opacity=0.85,
                     line=dict(
                         width=1.5,
-                        color="#FFFFFF" if c["is_dark"] else "#0F172A",
+                        color="#050505" if c["is_dark"] else "#FFFFFF",
                     ),
                 ),
                 hovertemplate=(
@@ -274,7 +274,7 @@ def render_donut_chart(
                 marker=dict(
                     colors=chart_colors,
                     line=dict(
-                        color="#060913" if c["is_dark"] else "#FFFFFF",
+                        color="#050505" if c["is_dark"] else "#FFFFFF",
                         width=2,
                     ),
                 ),

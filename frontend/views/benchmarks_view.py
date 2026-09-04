@@ -16,14 +16,14 @@ def render_benchmarks_view():
         f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
-        f'Policy Benchmarks & <span style="color: {c["cyan"]} !important;">Empirical Evaluation</span>'
+        f'Policy Benchmarks & <span style="color: {c["text_muted"]} !important; font-weight: 600;">Empirical Evaluation</span>'
         f'</h1>'
         f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 820px;">'
         f'Rigorous empirical head-to-head evaluation of the Adaptive Engine (VH26 Satyagrah) against standard industry eviction algorithms (FIFO, LRU, LFU, GDSF).'
         f'</p>'
         f'</div>'
         f'<div style="display: flex; align-items: center; padding-top: 6px;">'
-        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
+        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; color: {c["text_muted"]}; border: 1px solid {c["card_border"]}; border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
         f'EMPIRICAL COMPARISON &bull; 4-QUADRANT EVALUATION'
         f'</span>'
         f'</div>'
@@ -40,7 +40,7 @@ def render_benchmarks_view():
     # BENCHMARK DATASET SOURCE CARD (MANDATORY SPEC RULE)
     # --------------------------------------------------
     source_html = (
-        f'<div class="hero-card" style="padding: 10px 16px; margin-bottom: 16px; border-left: 4px solid {c["cyan"]} !important; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">'
+        f'<div class="hero-card" style="padding: 10px 16px; margin-bottom: 16px; border: 1px solid {c["card_border"]} !important; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">'
         f'<div style="display: flex; align-items: center; gap: 8px;">'
         f'<span style="font-size: 13px;">📁</span>'
         f'<span style="font-size: 11.5px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">BENCHMARK SUITE:</span>'
@@ -55,12 +55,12 @@ def render_benchmarks_view():
     # EXECUTIVE SUMMARY RIBBON
     # --------------------------------------------------
     exec_ribbon_html = (
-        f'<div class="hero-card" style="padding: 12px 18px; margin-bottom: 18px; border-left: 4px solid #10B981 !important; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 16px rgba(0,0,0,0.12);">'
+        f'<div class="hero-card" style="padding: 12px 18px; margin-bottom: 18px; border: 1px solid {c["card_border"]} !important; border-left: 3px solid {c["emerald"]} !important; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 16px rgba(0,0,0,0.12);">'
         f'<div style="display: flex; align-items: center; gap: 12px;">'
         f'<span class="badge-pill badge-protected" style="font-size: 11px; padding: 4px 10px;">★ LEADERBOARD WINNER</span>'
         f'<span style="font-size: 13.5px; font-weight: 800; color: {c["text"]};">Adaptive Multi-Factor Engine achieves superior Pareto frontier across all 4 production benchmarks</span>'
         f'</div>'
-        f'<div style="font-size: 12px; color: #10B981; font-weight: 700;">+11.2% Hit Rate &bull; -35.7% Latency &bull; -$7.20/hr Cloud Spend</div>'
+        f'<div style="font-size: 12px; color: {c["emerald"]}; font-weight: 700;">+11.2% Hit Rate &bull; -35.7% Latency &bull; -$7.20/hr Cloud Spend</div>'
         f'</div>'
     )
     st.markdown(exec_ribbon_html, unsafe_allow_html=True)
@@ -77,10 +77,10 @@ def render_benchmarks_view():
             subtitle="Adaptive Engine vs 78.4% LRU",
             tag="HIT RATE LEADER",
             delta="↑ +11.2% Gain",
-            delta_color="#10B981",
+            delta_color=c["emerald"],
             tooltip="Highest sustained cache hit rate under production Zipfian access patterns.",
             progress_value=0.896,
-            progress_color="#10B981",
+            progress_color=c["emerald"],
             is_floating=True,
         )
 
@@ -91,10 +91,10 @@ def render_benchmarks_view():
             subtitle="vs 42.5 ms on standard LRU",
             tag="LATENCY CHAMPION",
             delta="↓ -35.7% Speedup",
-            delta_color=c["cyan"],
+            delta_color=c["emerald"],
             tooltip="95th percentile read latency across 100,000 synthetic test operations.",
             progress_value=0.73,
-            progress_color=c["cyan"],
+            progress_color=c["emerald"],
         )
 
     with m3:
@@ -104,10 +104,10 @@ def render_benchmarks_view():
             subtitle="vs $18.40 on standard LRU",
             tag="CLOUD SPEND SAVINGS",
             delta="-$7.20 / hour Saved",
-            delta_color="#F59E0B",
+            delta_color=c["emerald"],
             tooltip="Calculated cloud backend database compute and third-party API spend.",
             progress_value=0.61,
-            progress_color="#F59E0B",
+            progress_color=c["emerald"],
             is_floating=True,
         )
 

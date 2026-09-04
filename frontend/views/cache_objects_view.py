@@ -60,14 +60,14 @@ def render_cache_objects_view():
         f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
-        f'Cache Objects & <span style="color: {c["cyan"]} !important;">Memory Landscape</span>'
+        f'Cache Objects & <span style="color: {c["text_muted"]} !important; font-weight: 600;">Memory Landscape</span>'
         f'</h1>'
         f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 820px;">'
         f'2D utility-density mapping, real-time object inspection, and decision arbitration rationales across all active Tier-1 cache keys.'
         f'</p>'
         f'</div>'
         f'<div style="display: flex; align-items: center; padding-top: 6px;">'
-        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
+        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; color: {c["text_muted"]}; border: 1px solid {c["card_border"]}; border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
         f'TIER-1 IN-MEMORY REGISTRY &bull; DIAGNOSTICS'
         f'</span>'
         f'</div>'
@@ -114,7 +114,7 @@ def render_cache_objects_view():
                     f"""
                     <div class="status-card" style="padding: 10px 12px;">
                         <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">KEY</span>
-                        <div style="font-family: monospace; font-size: 12px; font-weight: 700; color: {c['cyan']}; margin: 2px 0 4px 0;">{lk}</div>
+                        <div style="font-family: monospace; font-size: 12px; font-weight: 700; color: {c['text']}; margin: 2px 0 4px 0;">{lk}</div>
                         <div style="font-size: 13px; font-weight: 800; color: {c['text']};">{format_int(lcnt)} accesses</div>
                     </div>
                     """,
@@ -150,11 +150,11 @@ def render_cache_objects_view():
             subtitle="Tier-1 in-memory registry",
             tag="OBJECT REGISTRY",
             delta="Managed by Arbiter",
-            delta_color=c["cyan"],
+            delta_color=c["text_muted"],
             is_floating=True,
             tooltip="Total key-value entries presently tracked in RAM.",
             progress_value=min(1.0, total_keys / 20.0),
-            progress_color=c["cyan"],
+            progress_color=c["emerald"],
         )
 
     with k2:
@@ -380,7 +380,7 @@ def render_cache_objects_view():
                     f'</div>'
                     f'<div style="margin-bottom: 10px;">'
                     f'<span style="font-size: 10px; font-weight: 700; color: {c["text_subtle"]}; text-transform: uppercase; display: block; margin-bottom: 3px;">CACHE KEY IDENTIFIER</span>'
-                    f'<code style="font-size: 12px; color: {c["cyan"]}; font-weight: 700; word-break: break-all; background: {c["card_bg_elevated"]}; padding: 5px 8px; border-radius: 6px; border: 1px solid {c["card_border"]}; display: block; font-family: monospace;">{item["key"]}</code>'
+                    f'<code style="font-size: 12px; color: {c["text"]}; font-weight: 700; word-break: break-all; background: {c["card_bg_elevated"]}; padding: 5px 8px; border-radius: 6px; border: 1px solid {c["card_border"]}; display: block; font-family: monospace;">{item["key"]}</code>'
                     f'</div>'
                     f'<div style="margin: 10px 0; padding: 10px 12px; background: {c["card_bg_elevated"]}; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                     f'<span style="font-size: 10px; font-weight: 800; color: {c["text_muted"]}; letter-spacing: 0.5px; text-transform: uppercase;">ARBITER RATIONALE</span>'
@@ -389,7 +389,7 @@ def render_cache_objects_view():
                     f'<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; text-align: center;">'
                     f'<div style="background: {c["card_bg_elevated"]}; padding: 8px 6px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
                     f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Score</span>'
-                    f'<div style="font-size: 14px; font-weight: 800; color: #10B981;">{float(item["utility_score"]):.2f}</div>'
+                    f'<div style="font-size: 14px; font-weight: 800; color: {c["emerald"]};">{float(item["utility_score"]):.2f}</div>'
                     f'</div>'
                     f'<div style="background: {c["card_bg_elevated"]}; padding: 8px 6px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
                     f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Cost</span>'
@@ -397,7 +397,7 @@ def render_cache_objects_view():
                     f'</div>'
                     f'<div style="background: {c["card_bg_elevated"]}; padding: 8px 6px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
                     f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Velocity</span>'
-                    f'<div style="font-size: 14px; font-weight: 800; color: {c["cyan"]};">{item["hits_last_min"]} <span style="font-size: 9px; font-weight: 500;">req/m</span></div>'
+                    f'<div style="font-size: 14px; font-weight: 800; color: {c["text"]};">{item["hits_last_min"]} <span style="font-size: 9px; font-weight: 500;">req/m</span></div>'
                     f'</div>'
                     f'</div>'
                     f'</div>'

@@ -51,16 +51,16 @@ def render_overview_view():
         f"""
         <div style="margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 4px; padding: 2px 8px;">
+                <span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: {'rgba(255, 255, 255, 0.06)' if c['is_dark'] else 'rgba(0, 0, 0, 0.04)'}; color: {c['text_muted']}; border: 1px solid {c['card_border']}; border-radius: 4px; padding: 2px 8px;">
                     VH26 SATYAGRAH &bull; OBSERVABILITY CONTROL PLANE
                 </span>
                 <span style="font-size: 11px; color: {c["text_subtle"]};">&bull;</span>
-                <span style="font-size: 11px; font-weight: 600; color: #10B981;">
+                <span style="font-size: 11px; font-weight: 700; color: #22C55E;">
                     ADAPTIVE ARBITRATION ACTIVE
                 </span>
             </div>
             <h1 style="font-size: 2.2rem; font-weight: 800; margin: 0 0 6px 0; letter-spacing: -0.6px; color: {c['text']} !important;">
-                Adaptive Cache <span style="color: {c['cyan']} !important;">Control Center</span>
+                Adaptive Cache <span style="color: {c['text_muted']} !important; font-weight: 600;">Control Center</span>
             </h1>
             <p style="font-size: 14px; color: {c["text_muted"]}; margin: 0; max-width: 950px; line-height: 1.5;">
                 A context-aware, cost-driven caching engine moving beyond static LRU/LFU heuristics. 
@@ -87,7 +87,7 @@ def render_overview_view():
         f'</div>'
         f'<div style="display: flex; align-items: center; gap: 8px;">'
         f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">SOURCE:</span>'
-        f'<span style="font-size: 11px; font-weight: 700; color: {c["cyan"]}; background: rgba(56, 189, 248, 0.12); padding: 2px 8px; border-radius: 4px;">GET /telemetry/observation</span>'
+        f'<span style="font-size: 11px; font-weight: 700; color: {c["text"]}; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.04)"}; border: 1px solid {c["card_border"]}; padding: 2px 8px; border-radius: 4px; font-family: monospace;">GET /telemetry/observation</span>'
         f'</div>'
         f'<div style="display: flex; align-items: center; gap: 8px;">'
         f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">WINDOW DURATION:</span>'
@@ -142,7 +142,7 @@ def render_overview_view():
             tag="PENALTY",
             tooltip="Ratio of requests requiring expensive backend recompute and retrieval.",
             progress_value=min(1.0, max(0.0, float(miss_rate))),
-            progress_color=c["amber"] if miss_rate > 0.3 else c["cyan"],
+            progress_color=c["rose"] if miss_rate > 0.3 else c["amber"],
         )
 
     with k3:
@@ -153,7 +153,7 @@ def render_overview_view():
             tag="INGRESS",
             tooltip="Total ingress request velocity in the current sliding observation window.",
             progress_value=min(1.0, float(req_rate) / 10.0) if req_rate > 0 else 0.05,
-            progress_color=c["cyan"],
+            progress_color=c["text_muted"],
         )
 
     with k4:
@@ -175,7 +175,7 @@ def render_overview_view():
             tag="OFFLOAD",
             tooltip="Number of times the backend data layer had to be queried due to cache misses.",
             progress_value=min(1.0, float(backend_calls) / max(1.0, float(total_reqs))) if total_reqs > 0 else 0.0,
-            progress_color=c["amber"] if backend_calls > 5 else c["cyan"],
+            progress_color=c["rose"] if backend_calls > 5 else c["amber"],
         )
 
     with k6:
@@ -186,7 +186,7 @@ def render_overview_view():
             tag="MEMORY",
             tooltip="Total memory bytes and object count tracked in backend cache.",
             progress_value=0.25,
-            progress_color=c["cyan"],
+            progress_color=c["emerald"],
         )
 
     # --------------------------------------------------
@@ -263,7 +263,7 @@ def render_overview_view():
             f'</div>'
             f'<div style="background:{c["card_bg_elevated"]};padding:8px 12px;border-radius:6px;border:1px solid {c["card_border"]};">'
             f'<span class="muted" style="font-size:10px;font-weight:700;text-transform:uppercase;">Cache Evictions</span>'
-            f'<div style="font-size:14px;font-weight:700;color:{c["cyan"]};margin-top:2px;">{format_int(evictions)}</div>'
+            f'<div style="font-size:14px;font-weight:700;color:{c["rose"]};margin-top:2px;">{format_int(evictions)}</div>'
             f'</div>'
             f'<div style="background:{c["card_bg_elevated"]};padding:8px 12px;border-radius:6px;border:1px solid {c["card_border"]};">'
             f'<span class="muted" style="font-size:10px;font-weight:700;text-transform:uppercase;">Allocated Capacity</span>'
@@ -271,7 +271,7 @@ def render_overview_view():
             f'</div>'
             f'<div style="background:{c["card_bg_elevated"]};padding:8px 12px;border-radius:6px;border:1px solid {c["card_border"]};">'
             f'<span class="muted" style="font-size:10px;font-weight:700;text-transform:uppercase;">Backend Calls Prevented</span>'
-            f'<div style="font-size:14px;font-weight:700;color:#10B981;margin-top:2px;">{format_int(hits_cnt)}</div>'
+            f'<div style="font-size:14px;font-weight:700;color:#22C55E;margin-top:2px;">{format_int(hits_cnt)}</div>'
             f'</div>'
             f'</div>'
             f'<div style="font-size:11.5px;color:{c["text_muted"]};line-height:1.4;border-top:1px solid {c["card_border"]};padding-top:10px;">'
@@ -303,7 +303,7 @@ def render_overview_view():
                     f"""
                     <div class="hero-card" style="padding: 10px 14px;">
                         <div style="font-size: 10px; font-weight: 700; color: {c['text_muted']}; text-transform: uppercase;">KEY</div>
-                        <code style="font-size: 12.5px; color: {c['cyan']} !important; background: rgba(56,189,248,0.1) !important; padding: 2px 6px; border-radius: 4px;">{k}</code>
+                        <code style="font-size: 12.5px; color: {c['text']} !important; background: {'rgba(255,255,255,0.06)' if c['is_dark'] else 'rgba(0,0,0,0.04)'} !important; border: 1px solid {c['card_border']} !important; padding: 2px 6px; border-radius: 4px; font-family: monospace;">{k}</code>
                         <div style="margin-top: 6px; font-size: 12px; font-weight: 800; color: {c['text']};">
                             {format_int(cnt)} accesses
                         </div>
@@ -331,31 +331,31 @@ def render_overview_view():
     pipe_grid = (
         f'<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 22px;">'
         f'<div class="pipeline-node">'
-        f'<div style="font-size: 10px; font-weight: 800; color: {c["cyan"]}; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">STAGE 1</div>'
+        f'<div style="font-size: 10px; font-weight: 800; color: {c["text_muted"]}; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">STAGE 1</div>'
         f'<div style="font-size: 13.5px; font-weight: 800; color: {c["text"]}; margin-bottom: 4px;">Telemetry Ingestion</div>'
         f'<div style="font-size: 11px; color: {c["text_muted"]}; line-height: 1.4;">Live access streams, miss latency, burst rate & memory usage.</div>'
-        f'<div style="margin-top: 8px;"><span style="font-size: 9.5px; background: rgba(56,189,248,0.12); color: {c["cyan"]}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{format_request_rate(req_rate)}</span></div>'
+        f'<div style="margin-top: 8px;"><span style="font-size: 9.5px; background: {"rgba(255,255,255,0.06)" if c["is_dark"] else "rgba(0,0,0,0.04)"}; border: 1px solid {c["card_border"]}; color: {c["text_muted"]}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{format_request_rate(req_rate)}</span></div>'
         f'</div>'
         f'<div class="pipeline-node">'
         f'<div style="font-size: 10px; font-weight: 800; color: {c["purple"]}; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">STAGE 2</div>'
         f'<div style="font-size: 13.5px; font-weight: 800; color: {c["text"]}; margin-bottom: 4px;">Workload Classifier</div>'
         f'<div style="font-size: 11px; color: {c["text_muted"]}; line-height: 1.4;">Evaluates access skew, read/write patterns, and burst dynamics.</div>'
-        f'<div style="margin-top: 8px;"><span style="font-size: 9.5px; background: rgba(168,85,247,0.12); color: {c["purple"]}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{workload_display}</span></div>'
+        f'<div style="margin-top: 8px;"><span style="font-size: 9.5px; background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.22); color: {c["purple"]}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{workload_display}</span></div>'
         f'</div>'
         f'<div class="pipeline-node">'
-        f'<div style="font-size: 10px; font-weight: 800; color: {c["cyan"]}; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">STAGE 3</div>'
+        f'<div style="font-size: 10px; font-weight: 800; color: {c["purple"]}; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">STAGE 3</div>'
         f'<div style="font-size: 13.5px; font-weight: 800; color: {c["text"]}; margin-bottom: 4px;">Utility Scoring (GDSF)</div>'
         f'<div style="font-size: 11px; color: {c["text_muted"]}; line-height: 1.4;">Computes density score: (Cost^α &times; Latency^β &times; Frequency) / Size^γ.</div>'
-        f'<div style="margin-top: 8px;"><span style="font-size: 9.5px; background: rgba(56,189,248,0.12); color: {c["cyan"]}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">α=1.0, β=1.0, γ=1.0</span></div>'
+        f'<div style="margin-top: 8px;"><span style="font-size: 9.5px; background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.22); color: {c["purple"]}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">α=1.0, β=1.0, γ=1.0</span></div>'
         f'</div>'
         f'<div class="pipeline-node">'
         f'<div style="font-size: 10px; font-weight: 800; color: {c["amber"]}; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">STAGE 4</div>'
         f'<div style="font-size: 13.5px; font-weight: 800; color: {c["text"]}; margin-bottom: 4px;">Economic Density</div>'
         f'<div style="font-size: 11px; color: {c["text_muted"]}; line-height: 1.4;">Balances RAM cost against downstream backend recomputation penalty.</div>'
-        f'<div style="margin-top: 8px;"><span style="font-size: 9.5px; background: rgba(245,158,11,0.12); color: {c["amber"]}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">Latency Savings: {format_latency(latency_ms)}</span></div>'
+        f'<div style="margin-top: 8px;"><span style="font-size: 9.5px; background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.22); color: {c["amber"]}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">Latency Savings: {format_latency(latency_ms)}</span></div>'
         f'</div>'
-        f'<div class="pipeline-node" style="border-color: rgba(16, 185, 129, 0.4);">'
-        f'<div style="font-size: 10px; font-weight: 800; color: #10B981; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">STAGE 5</div>'
+        f'<div class="pipeline-node" style="border-color: rgba(34, 197, 94, 0.35);">'
+        f'<div style="font-size: 10px; font-weight: 800; color: #22C55E; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">STAGE 5</div>'
         f'<div style="font-size: 13.5px; font-weight: 800; color: {c["text"]}; margin-bottom: 4px;">Arbiter Action</div>'
         f'<div style="font-size: 11px; color: {c["text_muted"]}; line-height: 1.4;">Automated execution: retains high-utility entries, evicts cold items.</div>'
         f'<div style="margin-top: 8px; display: flex; justify-content: center; gap: 4px;">'

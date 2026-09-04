@@ -27,14 +27,14 @@ def render_system_view():
         f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
-        f'System State & <span style="color: {c["cyan"]} !important;">Runtime Topology</span>'
+        f'System State & <span style="color: {c["text_muted"]} !important; font-weight: 600;">Runtime Topology</span>'
         f'</h1>'
         f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 840px;">'
         f'Runtime cache usage, active in-memory object tracking, logical capacity constraints, and observation window lifecycle management.'
         f'</p>'
         f'</div>'
         f'<div style="display: flex; align-items: center; padding-top: 6px;">'
-        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
+        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; color: {c["text_muted"]}; border: 1px solid {c["card_border"]}; border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
         f'GET /TELEMETRY/SYSTEM'
         f'</span>'
         f'</div>'
@@ -60,7 +60,7 @@ def render_system_view():
             subtitle=f"{format_int(usage_bytes)} total bytes tracked",
             tag="MEMORY",
             delta="In-Memory Cache Layer",
-            delta_color=c["cyan"],
+            delta_color=c["text_muted"],
             tooltip="Sum of payload sizes of currently tracked cache entries in RAM.",
         )
 
@@ -94,7 +94,7 @@ def render_system_view():
             subtitle="Current window observations",
             tag="PRUNING",
             delta="Nominal (Zero Evictions)",
-            delta_color="#10B981",
+            delta_color=c["emerald"],
             tooltip="Number of objects evicted from cache in current window. Currently 0 because eviction is unconstrained.",
         )
 
@@ -123,8 +123,8 @@ def render_system_view():
             f'Managed by FastAPI <code>create_cache_manager()</code>. Employs in-memory or Redis key-value storage with automatic metadata tracking.'
             f'</p>'
             f'<div style="display: flex; gap: 8px;">'
-            f'<span style="font-size: 10.5px; font-weight: 700; color: {c["cyan"]}; background: rgba(56, 189, 248, 0.12); padding: 2px 7px; border-radius: 4px;">Memory: {format_bytes(usage_bytes)}</span>'
-            f'<span style="font-size: 10.5px; font-weight: 700; color: #10B981; background: rgba(16, 185, 129, 0.12); padding: 2px 7px; border-radius: 4px;">Objects: {format_int(object_count)}</span>'
+            f'<span style="font-size: 10.5px; font-weight: 700; color: {c["text"]}; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; border: 1px solid {c["card_border"]}; padding: 2px 7px; border-radius: 4px;">Memory: {format_bytes(usage_bytes)}</span>'
+            f'<span style="font-size: 10.5px; font-weight: 700; color: {c["emerald"]}; background: {"rgba(34, 197, 94, 0.10)" if c["is_dark"] else "rgba(34, 197, 94, 0.08)"}; border: 1px solid {"rgba(34, 197, 94, 0.20)" if c["is_dark"] else "rgba(34, 197, 94, 0.15)"}; padding: 2px 7px; border-radius: 4px;">Objects: {format_int(object_count)}</span>'
             f'</div>'
             f'</div>'
             f'<div class="hero-card" style="padding: 16px 18px; border-radius: 10px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'

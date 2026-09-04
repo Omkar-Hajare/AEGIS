@@ -14,66 +14,78 @@ def get_theme_colors() -> dict:
     if dark:
         return {
             "is_dark": True,
-            "bg": "#060913",
-            "card_bg": "#0B1120",
-            "card_surface": "#0E1726",
-            "card_bg_elevated": "#0E1726",
-            "card_border": "rgba(56, 189, 248, 0.12)",
-            "card_border_glow": "rgba(56, 189, 248, 0.35)",
-            "text": "#F8FAFC",
-            "text_muted": "#94A3B8",
-            "text_subtle": "#64748B",
-            "sidebar_bg": "#080D1A",
-            "sidebar_border": "rgba(255, 255, 255, 0.08)",
-            "terminal_bg": "#050811",
-            "terminal_border": "#1E293B",
-            # Accents
-            "cyan": "#38BDF8",
-            "emerald": "#10B981",
+            "bg": "#050505",
+            "secondary_bg": "#0A0A0B",
+            "card_bg": "rgba(255, 255, 255, 0.04)",
+            "card_bg_hover": "rgba(255, 255, 255, 0.07)",
+            "card_surface": "rgba(255, 255, 255, 0.04)",
+            "card_bg_elevated": "rgba(255, 255, 255, 0.06)",
+            "card_border": "rgba(255, 255, 255, 0.10)",
+            "card_border_glow": "rgba(255, 255, 255, 0.16)",
+            "text": "#F5F5F5",
+            "text_muted": "#A1A1AA",
+            "text_subtle": "#71717A",
+            "sidebar_bg": "#0A0A0B",
+            "sidebar_border": "rgba(255, 255, 255, 0.10)",
+            "terminal_bg": "#0A0A0B",
+            "terminal_border": "rgba(255, 255, 255, 0.10)",
+            # Semantic Colors (Restrained & Meaningful)
+            "green": "#22C55E",
+            "emerald": "#22C55E",
+            "red": "#EF4444",
+            "rose": "#EF4444",
             "amber": "#F59E0B",
-            "purple": "#A855F7",
-            "rose": "#F43F5E",
+            "purple": "#A78BFA",
+            "blue": "#60A5FA",
+            "cyan": "#60A5FA",
+            "neutral": "#F5F5F5",
             # Charts
-            "chart_paper_bg": "rgba(0,0,0,0)",
-            "chart_plot_bg": "rgba(0,0,0,0)",
-            "chart_font": "#E2E8F0",
+            "chart_paper_bg": "rgba(0, 0, 0, 0)",
+            "chart_plot_bg": "rgba(0, 0, 0, 0)",
+            "chart_font": "#F5F5F5",
             "chart_grid": "rgba(255, 255, 255, 0.06)",
-            "chart_zeroline": "rgba(255, 255, 255, 0.15)",
-            "tooltip_bg": "#0F172A",
-            "tooltip_border": "#38BDF8",
-            "tooltip_font": "#F8FAFC",
+            "chart_zeroline": "rgba(255, 255, 255, 0.12)",
+            "tooltip_bg": "#0A0A0B",
+            "tooltip_border": "rgba(255, 255, 255, 0.16)",
+            "tooltip_font": "#F5F5F5",
         }
     else:
         return {
             "is_dark": False,
-            "bg": "#F4F6F9",
-            "card_bg": "#FFFFFF",
-            "card_surface": "#F8FAFC",
-            "card_bg_elevated": "#F8FAFC",
-            "card_border": "#E2E8F0",
-            "card_border_glow": "rgba(2, 132, 199, 0.4)",
-            "text": "#0F172A",
-            "text_muted": "#334155",
-            "text_subtle": "#475569",
-            "sidebar_bg": "#EAEEF4",
-            "sidebar_border": "#CBD5E1",
-            "terminal_bg": "#0B0F19",
-            "terminal_border": "#1E293B",
-            # Accents
-            "cyan": "#0284C7",
-            "emerald": "#059669",
-            "amber": "#B45309",
-            "purple": "#7C3AED",
+            "bg": "#F4F4F5",
+            "secondary_bg": "#EDEDEF",
+            "card_bg": "rgba(255, 255, 255, 0.70)",
+            "card_bg_hover": "rgba(255, 255, 255, 0.85)",
+            "card_surface": "#EDEDEF",
+            "card_bg_elevated": "#FFFFFF",
+            "card_border": "rgba(0, 0, 0, 0.08)",
+            "card_border_glow": "rgba(0, 0, 0, 0.14)",
+            "text": "#18181B",
+            "text_muted": "#52525B",
+            "text_subtle": "#71717A",
+            "sidebar_bg": "#EDEDEF",
+            "sidebar_border": "rgba(0, 0, 0, 0.08)",
+            "terminal_bg": "#18181B",
+            "terminal_border": "rgba(0, 0, 0, 0.12)",
+            # Semantic Colors
+            "green": "#16A34A",
+            "emerald": "#16A34A",
+            "red": "#DC2626",
             "rose": "#DC2626",
+            "amber": "#D97706",
+            "purple": "#7C3AED",
+            "blue": "#2563EB",
+            "cyan": "#2563EB",
+            "neutral": "#18181B",
             # Charts
-            "chart_paper_bg": "rgba(0,0,0,0)",
-            "chart_plot_bg": "rgba(0,0,0,0)",
-            "chart_font": "#0F172A",
-            "chart_grid": "rgba(15, 23, 42, 0.08)",
-            "chart_zeroline": "rgba(15, 23, 42, 0.20)",
+            "chart_paper_bg": "rgba(0, 0, 0, 0)",
+            "chart_plot_bg": "rgba(0, 0, 0, 0)",
+            "chart_font": "#18181B",
+            "chart_grid": "rgba(0, 0, 0, 0.06)",
+            "chart_zeroline": "rgba(0, 0, 0, 0.12)",
             "tooltip_bg": "#FFFFFF",
-            "tooltip_border": "#0284C7",
-            "tooltip_font": "#0F172A",
+            "tooltip_border": "rgba(0, 0, 0, 0.12)",
+            "tooltip_font": "#18181B",
         }
 
 
@@ -109,61 +121,65 @@ def apply_global_styles():
     dark = c["is_dark"]
 
     if dark:
-        body_bg_color = "#060913"
+        body_bg_color = "#050505"
         body_gradient = (
-            "radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 45%), "
-            "radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 45%), "
-            "radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 50%)"
+            "radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.015) 0%, transparent 45%), "
+            "radial-gradient(circle at 82% 82%, rgba(167, 139, 250, 0.02) 0%, transparent 50%), "
+            "radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.01) 0%, transparent 60%)"
         )
-        card_bg = "rgba(11, 17, 32, 0.78)"
-        card_border = "rgba(148, 163, 184, 0.12)"
-        card_shadow = "0 4px 20px rgba(0, 0, 0, 0.35)"
-        card_shadow_hover = "0 10px 30px rgba(0, 0, 0, 0.55), 0 0 16px rgba(56, 189, 248, 0.14)"
-        sidebar_bg = "#080D1A"
-        sidebar_border = "rgba(255, 255, 255, 0.08)"
-        hr_color = "#1E293B"
-        dock_bg = "rgba(11, 17, 32, 0.85)"
-        navbar_bg = "rgba(8, 13, 26, 0.88)"
-        navbar_border = "rgba(56, 189, 248, 0.16)"
-        seg_bg = "rgba(12, 19, 34, 0.85)"
-        seg_border = "rgba(56, 189, 248, 0.16)"
-        seg_hover_bg = "rgba(255, 255, 255, 0.07)"
-        seg_active_bg = "rgba(56, 189, 248, 0.18)"
-        seg_active_border = "rgba(56, 189, 248, 0.50)"
-        seg_active_shadow = "0 0 12px rgba(56, 189, 248, 0.25)"
-        seg_active_color = "#38BDF8"
-        seg_inactive_color = "#94A3B8"
+        card_bg = "rgba(255, 255, 255, 0.04)"
+        card_bg_hover = "rgba(255, 255, 255, 0.07)"
+        card_border = "rgba(255, 255, 255, 0.10)"
+        card_border_hover = "rgba(255, 255, 255, 0.16)"
+        card_shadow = "0 8px 32px rgba(0, 0, 0, 0.25)"
+        card_shadow_hover = "0 12px 40px rgba(0, 0, 0, 0.35)"
+        sidebar_bg = "#0A0A0B"
+        sidebar_border = "rgba(255, 255, 255, 0.10)"
+        hr_color = "rgba(255, 255, 255, 0.08)"
+        dock_bg = "rgba(10, 10, 10, 0.72)"
+        navbar_bg = "rgba(10, 10, 10, 0.72)"
+        navbar_border = "rgba(255, 255, 255, 0.10)"
+        seg_bg = "rgba(255, 255, 255, 0.03)"
+        seg_border = "rgba(255, 255, 255, 0.08)"
+        seg_hover_bg = "rgba(255, 255, 255, 0.05)"
+        seg_active_bg = "rgba(255, 255, 255, 0.08)"
+        seg_active_border = "rgba(255, 255, 255, 0.14)"
+        seg_active_shadow = "0 2px 8px rgba(0, 0, 0, 0.2)"
+        seg_active_color = "#F5F5F5"
+        seg_inactive_color = "#A1A1AA"
     else:
-        body_bg_color = "#F4F6F9"
+        body_bg_color = "#F4F4F5"
         body_gradient = (
-            "radial-gradient(circle at 15% 20%, rgba(2, 132, 199, 0.04) 0%, transparent 40%), "
-            "radial-gradient(circle at 85% 80%, rgba(124, 58, 237, 0.03) 0%, transparent 40%)"
+            "radial-gradient(circle at 20% 20%, rgba(0, 0, 0, 0.015) 0%, transparent 40%), "
+            "radial-gradient(circle at 80% 80%, rgba(0, 0, 0, 0.01) 0%, transparent 40%)"
         )
-        card_bg = "rgba(255, 255, 255, 0.92)"
-        card_border = "#E2E8F0"
-        card_shadow = "0 4px 16px rgba(15, 23, 42, 0.05)"
-        card_shadow_hover = "0 8px 24px rgba(15, 23, 42, 0.1), 0 0 12px rgba(2, 132, 199, 0.12)"
-        sidebar_bg = "#EAEEF4"
-        sidebar_border = "#CBD5E1"
-        hr_color = "#E2E8F0"
-        dock_bg = "rgba(255, 255, 255, 0.94)"
-        navbar_bg = "rgba(255, 255, 255, 0.94)"
-        navbar_border = "#E2E8F0"
-        seg_bg = "#E8EDF4"
-        seg_border = "#CBD5E1"
-        seg_hover_bg = "rgba(255, 255, 255, 0.6)"
+        card_bg = "rgba(255, 255, 255, 0.70)"
+        card_bg_hover = "rgba(255, 255, 255, 0.85)"
+        card_border = "rgba(0, 0, 0, 0.08)"
+        card_border_hover = "rgba(0, 0, 0, 0.14)"
+        card_shadow = "0 4px 20px rgba(0, 0, 0, 0.04)"
+        card_shadow_hover = "0 8px 28px rgba(0, 0, 0, 0.08)"
+        sidebar_bg = "#EDEDEF"
+        sidebar_border = "rgba(0, 0, 0, 0.08)"
+        hr_color = "rgba(0, 0, 0, 0.08)"
+        dock_bg = "rgba(244, 244, 245, 0.85)"
+        navbar_bg = "rgba(244, 244, 245, 0.85)"
+        navbar_border = "rgba(0, 0, 0, 0.08)"
+        seg_bg = "rgba(0, 0, 0, 0.03)"
+        seg_border = "rgba(0, 0, 0, 0.06)"
+        seg_hover_bg = "rgba(0, 0, 0, 0.04)"
         seg_active_bg = "#FFFFFF"
-        seg_active_border = "rgba(2, 132, 199, 0.45)"
-        seg_active_shadow = "0 2px 8px rgba(15, 23, 42, 0.08), 0 0 10px rgba(2, 132, 199, 0.12)"
-        seg_active_color = "#0284C7"
-        seg_inactive_color = "#475569"
+        seg_active_border = "rgba(0, 0, 0, 0.12)"
+        seg_active_shadow = "0 2px 6px rgba(0, 0, 0, 0.06)"
+        seg_active_color = "#18181B"
+        seg_inactive_color = "#52525B"
 
-    sidebar_link_color = "#CBD5E1" if dark else "#1E293B"
+    sidebar_link_color = "#A1A1AA" if dark else "#52525B"
     sidebar_hover_bg = (
-        "rgba(56, 189, 248, 0.1)" if dark else "rgba(2, 132, 199, 0.08)"
+        "rgba(255, 255, 255, 0.06)" if dark else "rgba(0, 0, 0, 0.04)"
     )
     sidebar_active_bg = (
-        "rgba(56, 189, 248, 0.18)" if dark else "rgba(2, 132, 199, 0.14)"
+        "rgba(255, 255, 255, 0.10)" if dark else "rgba(0, 0, 0, 0.08)"
     )
 
     css = f"""
@@ -240,18 +256,20 @@ def apply_global_styles():
         /* Seamless Top Navbar: Edge-to-edge container alignment with crisp border-bottom */
         div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]),
         div[data-testid="stHorizontalBlock"]:has(button[data-variant="segmented_control"]) {{
-            background: transparent !important;
+            background: {navbar_bg} !important;
             border-bottom: 1px solid {navbar_border} !important;
             border-top: none !important;
             border-left: none !important;
             border-right: none !important;
             border-radius: 0px !important;
-            padding-top: 2px !important;
+            backdrop-filter: blur(18px) !important;
+            -webkit-backdrop-filter: blur(18px) !important;
+            padding-top: 4px !important;
             padding-bottom: 12px !important;
             padding-left: 0px !important;
             padding-right: 0px !important;
             margin-top: 0 !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 12px !important;
             box-shadow: none !important;
             align-items: center !important;
             width: 100% !important;
@@ -335,20 +353,22 @@ def apply_global_styles():
         div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) span[data-testid="stTooltipHoverTarget"] button {{
             border-radius: 8px !important;
             font-size: 12px !important;
-            font-weight: 700 !important;
+            font-weight: 600 !important;
             min-height: 34px !important;
             padding: 4px 10px !important;
-            background: {c["card_bg_elevated"]} !important;
-            background-color: {c["card_bg_elevated"]} !important;
+            background: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"} !important;
+            background-color: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"} !important;
             color: {c["text"]} !important;
             border: 1px solid {c["card_border"]} !important;
             box-shadow: none !important;
+            transition: all 0.18s ease !important;
         }}
         div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) .stButton button:hover,
         div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]) span[data-testid="stTooltipHoverTarget"] button:hover {{
-            border-color: {c["cyan"]} !important;
-            color: {c["cyan"]} !important;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25) !important;
+            background: {"rgba(255, 255, 255, 0.09)" if dark else "rgba(0, 0, 0, 0.07)"} !important;
+            border-color: {card_border_hover} !important;
+            color: {"#FFFFFF" if dark else "#000000"} !important;
+            box-shadow: none !important;
         }}
 
         /* Force theme text colors across standard markdown and Streamlit elements */
@@ -415,19 +435,19 @@ def apply_global_styles():
             fill: {c["text_muted"]} !important;
         }}
         div[data-baseweb="popover"], div[data-baseweb="menu"], [role="listbox"] {{
-            background-color: {c["card_bg"]} !important;
-            background: {c["card_bg"]} !important;
+            background-color: {"#0A0A0B" if dark else "#FFFFFF"} !important;
+            background: {"#0A0A0B" if dark else "#FFFFFF"} !important;
             border: 1px solid {c["card_border"]} !important;
             border-radius: 8px !important;
         }}
         li[role="option"], [role="option"] {{
-            background-color: {c["card_bg"]} !important;
-            background: {c["card_bg"]} !important;
+            background-color: {"#0A0A0B" if dark else "#FFFFFF"} !important;
+            background: {"#0A0A0B" if dark else "#FFFFFF"} !important;
             color: {c["text"]} !important;
         }}
         li[role="option"]:hover, [role="option"]:hover {{
-            background-color: {"rgba(56, 189, 248, 0.15)" if dark else "rgba(2, 132, 199, 0.1)"} !important;
-            color: {c["cyan"]} !important;
+            background-color: {"rgba(255, 255, 255, 0.08)" if dark else "rgba(0, 0, 0, 0.05)"} !important;
+            color: {"#FFFFFF" if dark else "#000000"} !important;
         }}
 
         [data-testid="stTextInput"] input {{
@@ -450,11 +470,12 @@ def apply_global_styles():
             color: {c["text_muted"]} !important;
         }}
         [data-testid="stSlider"] [role="slider"] {{
-            background-color: {c["cyan"]} !important;
-            border-color: {c["cyan"]} !important;
+            background-color: {c["text"]} !important;
+            border-color: {c["text"]} !important;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.2) !important;
         }}
         [data-testid="stSlider"] div[data-baseweb="slider"] div div:first-child {{
-            background-color: {c["cyan"]} !important;
+            background-color: {c["emerald"]} !important;
         }}
 
         /* Tabs */
@@ -465,23 +486,23 @@ def apply_global_styles():
             font-size: 13.5px !important;
         }}
         button[data-baseweb="tab"][aria-selected="true"] {{
-            color: {c["cyan"]} !important;
-            border-bottom-color: {c["cyan"]} !important;
+            color: {c["text"]} !important;
+            border-bottom-color: {c["text"]} !important;
             font-weight: 700 !important;
         }}
 
         /* Pulse Dot Keyframe */
         @keyframes pulseGlow {{
-            0% {{ box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }}
-            70% {{ box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }}
-            100% {{ box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }}
+            0% {{ box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }}
+            70% {{ box-shadow: 0 0 0 7px rgba(34, 197, 94, 0); }}
+            100% {{ box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }}
         }}
 
         .pulse-dot {{
             display: inline-block;
             width: 8px;
             height: 8px;
-            background-color: #10B981;
+            background-color: #22C55E;
             border-radius: 50%;
             margin-right: 7px;
             animation: pulseGlow 2.5s infinite;
@@ -491,6 +512,8 @@ def apply_global_styles():
         .control-ribbon {{
             background: {dock_bg};
             border: 1px solid {c["card_border"]};
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border-radius: 12px;
             padding: 9px 18px;
             margin-bottom: 16px;
@@ -500,19 +523,23 @@ def apply_global_styles():
             box-shadow: {card_shadow};
         }}
 
-        /* Modern Elevated Cards (GPU-Friendly Transitions) */
+        /* Modern Elevated Cards (Glassmorphism + GPU-Friendly Transitions) */
         .hero-card, .status-card, .decision-card {{
             background: {c["card_bg"]} !important;
             border: 1px solid {c["card_border"]} !important;
+            backdrop-filter: blur(14px) !important;
+            -webkit-backdrop-filter: blur(14px) !important;
             border-radius: 12px;
             padding: 18px 20px;
-            box-shadow: {card_shadow};
-            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease;
+            box-shadow: {card_shadow} !important;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
         }}
 
         .metric-card {{
             background: {c["card_bg"]} !important;
             border: 1px solid {c["card_border"]} !important;
+            backdrop-filter: blur(14px) !important;
+            -webkit-backdrop-filter: blur(14px) !important;
             border-radius: 12px !important;
             padding: 16px 18px !important;
             min-height: 130px !important;
@@ -521,22 +548,25 @@ def apply_global_styles():
             flex-direction: column !important;
             justify-content: space-between !important;
             box-shadow: {card_shadow} !important;
-            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease !important;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
         }}
 
         .hero-card:hover, .status-card:hover, .decision-card:hover, .metric-card:hover {{
-            border-color: {c["card_border_glow"]} !important;
+            background: {card_bg_hover} !important;
+            border-color: {card_border_hover} !important;
             transform: translateY(-2px);
-            box-shadow: {card_shadow_hover};
+            box-shadow: {card_shadow_hover} !important;
         }}
 
         /* Streamlit Native Metric cards */
         [data-testid="stMetric"] {{
             background: {c["card_bg"]} !important;
             border: 1px solid {c["card_border"]} !important;
+            backdrop-filter: blur(14px) !important;
+            -webkit-backdrop-filter: blur(14px) !important;
             border-radius: 12px !important;
             padding: 16px 18px !important;
-            box-shadow: {card_shadow};
+            box-shadow: {card_shadow} !important;
         }}
 
         [data-testid="stMetricLabel"] {{
@@ -555,29 +585,31 @@ def apply_global_styles():
 
         /* Terminal Console Box */
         .terminal-box {{
-            background-color: #060913 !important;
-            border: 1px solid rgba(56, 189, 248, 0.22) !important;
+            background-color: {"#0A0A0B" if dark else "#18181B"} !important;
+            border: 1px solid {c["card_border"]} !important;
+            backdrop-filter: blur(14px) !important;
+            -webkit-backdrop-filter: blur(14px) !important;
             border-radius: 10px;
             padding: 16px;
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
             font-size: 12px;
-            color: #38BDF8 !important;
+            color: #F5F5F5 !important;
             line-height: 1.7;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
         }}
         .terminal-box span, .terminal-box div {{
-            color: #94A3B8;
+            color: #A1A1AA;
         }}
         .terminal-box code {{
-            background: rgba(56, 189, 248, 0.12) !important;
-            color: #38BDF8 !important;
-            border: 1px solid rgba(56, 189, 248, 0.25) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #F5F5F5 !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
             padding: 2px 6px !important;
             border-radius: 4px !important;
             font-weight: 600 !important;
         }}
 
-        /* Buttons */
+        /* Buttons (Monochrome Glass System) */
         .stButton button,
         button[data-testid="stBaseButton-secondary"],
         span[data-testid="stTooltipHoverTarget"] button {{
@@ -585,27 +617,29 @@ def apply_global_styles():
             font-weight: 600 !important;
             font-size: 12.5px !important;
             min-height: 34px !important;
-            background-color: {c["card_bg_elevated"]} !important;
-            background: {c["card_bg_elevated"]} !important;
+            background-color: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"} !important;
+            background: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"} !important;
             color: {c["text"]} !important;
             border: 1px solid {c["card_border"]} !important;
             box-shadow: none !important;
-            transition: all 0.2s ease !important;
+            transition: all 0.18s ease !important;
         }}
         .stButton button:hover,
         button[data-testid="stBaseButton-secondary"]:hover,
         span[data-testid="stTooltipHoverTarget"] button:hover {{
-            border-color: {c["cyan"]} !important;
-            color: {c["cyan"]} !important;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2) !important;
+            background-color: {"rgba(255, 255, 255, 0.09)" if dark else "rgba(0, 0, 0, 0.07)"} !important;
+            background: {"rgba(255, 255, 255, 0.09)" if dark else "rgba(0, 0, 0, 0.07)"} !important;
+            border-color: {card_border_hover} !important;
+            color: {"#FFFFFF" if dark else "#000000"} !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
         }}
         .stButton button[kind="primary"],
         button[data-testid="stBaseButton-primary"] {{
-            background-color: {c["cyan"]} !important;
-            background: {c["cyan"]} !important;
+            background-color: {"rgba(255, 255, 255, 0.12)" if dark else "#18181B"} !important;
+            background: {"rgba(255, 255, 255, 0.12)" if dark else "#18181B"} !important;
             color: #FFFFFF !important;
             font-weight: 700 !important;
-            border-color: {c["cyan"]} !important;
+            border: 1px solid {"rgba(255, 255, 255, 0.22)" if dark else "#18181B"} !important;
         }}
 
         /* Dividers */
@@ -622,7 +656,7 @@ def apply_global_styles():
             background-color: {c["card_bg"]} !important;
         }}
 
-        /* Clean Technical Badges (No Emoji Clutter) */
+        /* Clean Technical Glass Badges */
         .badge-pill {{
             display: inline-flex;
             align-items: center;
@@ -634,35 +668,37 @@ def apply_global_styles():
             text-transform: uppercase;
         }}
         .badge-protected {{
-            background: rgba(16, 185, 129, 0.15);
-            color: #10B981;
-            border: 1px solid rgba(16, 185, 129, 0.35);
+            background: rgba(34, 197, 94, 0.10);
+            color: #22C55E;
+            border: 1px solid rgba(34, 197, 94, 0.22);
         }}
         .badge-hot {{
-            background: rgba(245, 158, 11, 0.15);
-            color: {"#F59E0B" if dark else "#B45309"};
-            border: 1px solid rgba(245, 158, 11, 0.35);
+            background: rgba(245, 158, 11, 0.10);
+            color: {"#F59E0B" if dark else "#D97706"};
+            border: 1px solid rgba(245, 158, 11, 0.22);
         }}
         .badge-risk {{
-            background: rgba(244, 63, 94, 0.15);
-            color: {"#F43F5E" if dark else "#DC2626"};
-            border: 1px solid rgba(244, 63, 94, 0.35);
+            background: rgba(239, 68, 68, 0.10);
+            color: {"#EF4444" if dark else "#DC2626"};
+            border: 1px solid rgba(239, 68, 68, 0.22);
         }}
         .badge-active {{
-            background: rgba(56, 189, 248, 0.15);
-            color: {"#38BDF8" if dark else "#0284C7"};
-            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"};
+            color: {c["text_muted"]};
+            border: 1px solid {c["card_border"]};
         }}
         .badge-purple {{
-            background: rgba(168, 85, 247, 0.15);
-            color: {"#A855F7" if dark else "#7C3AED"};
-            border: 1px solid rgba(168, 85, 247, 0.35);
+            background: rgba(167, 139, 250, 0.10);
+            color: {"#A78BFA" if dark else "#7C3AED"};
+            border: 1px solid rgba(167, 139, 250, 0.22);
         }}
 
         /* Responsive Pipeline Flow Grid */
         .pipeline-node {{
             background: {c["card_surface"]};
             border: 1px solid {c["card_border"]};
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border-radius: 10px;
             padding: 14px 16px;
             text-align: center;
@@ -670,7 +706,7 @@ def apply_global_styles():
             transition: all 0.2s ease;
         }}
         .pipeline-node:hover {{
-            border-color: {c["card_border_glow"]};
+            border-color: {card_border_hover};
             transform: translateY(-2px);
         }}
 
@@ -685,9 +721,10 @@ def apply_global_styles():
 def render_top_control_bar(active_page: str = "Overview"):
     """Render unified top observability ribbon with dynamic live/demo system connectivity badges."""
     c = get_theme_colors()
+    dark = c["is_dark"]
     b_status = get_backend_status()
     is_live = b_status["is_live"]
-    status_color = "#10B981" if is_live else c["amber"]
+    status_color = "#22C55E" if is_live else c["amber"]
     status_text = "SYSTEM OPERATIONAL" if is_live else "DEMO MODE (LOCAL TELEMETRY)"
     pulse_dot_html = (
         '<span class="pulse-dot"></span>'
@@ -696,12 +733,12 @@ def render_top_control_bar(active_page: str = "Overview"):
     )
     tier_label = "REDIS TIER-1" if is_live else "IN-MEMORY TELEMETRY"
     stream_badge = "● LIVE STREAMING" if is_live else "● SYNTHETIC TRACE"
-    stream_color = c["cyan"] if is_live else c["amber"]
+    stream_color = "#22C55E" if is_live else c["amber"]
     stream_bg = (
-        "rgba(56, 189, 248, 0.12)" if is_live else "rgba(245, 158, 11, 0.12)"
+        "rgba(34, 197, 94, 0.10)" if is_live else "rgba(245, 158, 11, 0.10)"
     )
     stream_border = (
-        "rgba(56, 189, 248, 0.25)" if is_live else "rgba(245, 158, 11, 0.25)"
+        "rgba(34, 197, 94, 0.22)" if is_live else "rgba(245, 158, 11, 0.22)"
     )
 
     st.markdown(
@@ -709,16 +746,16 @@ def render_top_control_bar(active_page: str = "Overview"):
         <div class="control-ribbon">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3);">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{c["cyan"]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background: {'rgba(255, 255, 255, 0.06)' if dark else 'rgba(0, 0, 0, 0.04)'}; border: 1px solid {c['card_border']};">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{c['text']}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                         </svg>
                     </div>
-                    <span style="font-weight: 800; font-size: 13.5px; letter-spacing: -0.2px; color: {c["text"]};">
+                    <span style="font-weight: 800; font-size: 13.5px; letter-spacing: -0.2px; color: {c['text']};">
                         AdaptiveCache
                     </span>
-                    <span style="color: {c["text_subtle"]}; font-size: 12px;">/</span>
-                    <span style="color: {c["cyan"]}; font-size: 12.5px; font-weight: 600;">{active_page}</span>
+                    <span style="color: {c['text_subtle']}; font-size: 12px;">/</span>
+                    <span style="color: {c['text_muted']}; font-size: 12.5px; font-weight: 600;">{active_page}</span>
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 14px;">
@@ -726,7 +763,7 @@ def render_top_control_bar(active_page: str = "Overview"):
                     {pulse_dot_html}{status_text}
                 </div>
                 <div style="display: none; @media (min-width: 768px) {{ display: block; }}">
-                    <span style="font-size: 11px; font-weight: 600; color: {c["text_muted"]}; background: rgba(255, 255, 255, 0.05); border: 1px solid {c["card_border"]}; padding: 3px 8px; border-radius: 5px;">
+                    <span style="font-size: 11px; font-weight: 600; color: {c['text_muted']}; background: {'rgba(255, 255, 255, 0.05)' if dark else 'rgba(0, 0, 0, 0.03)'}; border: 1px solid {c['card_border']}; padding: 3px 8px; border-radius: 5px;">
                         {tier_label}
                     </span>
                 </div>
@@ -745,9 +782,10 @@ def render_top_control_bar(active_page: str = "Overview"):
 def render_sidebar_branding(active_page: str = ""):
     """Render unified branding, engine tier status, and the Dark/White theme toggler."""
     c = get_theme_colors()
+    dark = c["is_dark"]
     b_status = get_backend_status()
     is_live = b_status["is_live"]
-    tier_status_color = "#10B981" if is_live else c["amber"]
+    tier_status_color = "#22C55E" if is_live else c["amber"]
     tier_status_text = "● ONLINE" if is_live else "○ DEMO MODE"
     tier_subtitle = "Redis + Telemetry Loop" if is_live else "Local High-Fidelity Trace"
 
@@ -755,13 +793,13 @@ def render_sidebar_branding(active_page: str = ""):
         st.markdown(
             f"""
             <div style="text-align: center; padding: 6px 0 14px 0;">
-                <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 8px;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{c["cyan"]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; background: {'rgba(255, 255, 255, 0.06)' if dark else 'rgba(0, 0, 0, 0.04)'}; border: 1px solid {c['card_border']}; margin-bottom: 8px;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{c['text']}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                     </svg>
                 </div>
-                <h2 style="margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.2px; color: {c["text"]} !important;">ADAPTIVE CACHE</h2>
-                <p class="muted" style="font-size: 11px; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.8px; color: {c["text_muted"]} !important;">Control Center &bull; v2.6</p>
+                <h2 style="margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.2px; color: {c['text']} !important;">ADAPTIVE CACHE</h2>
+                <p class="muted" style="font-size: 11px; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.8px; color: {c['text_muted']} !important;">Control Center &bull; v2.6</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -770,16 +808,16 @@ def render_sidebar_branding(active_page: str = ""):
         # Engine Tier Status Badge
         st.markdown(
             f"""
-            <div class="hero-card" style="padding: 10px 14px; margin-bottom: 16px; background: {c["card_bg"]} !important; border: 1px solid {c["card_border"]} !important;">
+            <div class="hero-card" style="padding: 10px 14px; margin-bottom: 16px; background: {c['card_bg']} !important; border: 1px solid {c['card_border']} !important;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: {c["text_muted"]};">
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: {c['text_muted']};">
                         TIER 1 ARBITER
                     </span>
                     <span style="color: {tier_status_color}; font-size: 11px; font-weight: 700;">
                         {tier_status_text}
                     </span>
                 </div>
-                <div style="font-size: 13px; font-weight: 600; margin-top: 4px; color: {c["text"]};">
+                <div style="font-size: 13px; font-weight: 600; margin-top: 4px; color: {c['text']};">
                     {tier_subtitle}
                 </div>
             </div>
@@ -795,7 +833,7 @@ def render_sidebar_branding(active_page: str = ""):
             toggle_label,
             value=is_dark,
             key=f"theme_toggle_{active_page or 'main'}",
-            help="Toggle between Cyber Obsidian Dark Mode and Clean Light Mode",
+            help="Toggle between Black/White Glassmorphism Dark Mode and Clean Light Mode",
         )
 
         if new_val != is_dark:

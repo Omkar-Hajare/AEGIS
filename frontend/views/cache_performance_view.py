@@ -29,14 +29,14 @@ def render_cache_performance_view():
         f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
-        f'Cache Performance & <span style="color: {c["cyan"]} !important;">Hit/Miss Telemetry</span>'
+        f'Cache Performance & <span style="color: {c["text_muted"]} !important; font-weight: 600;">Hit/Miss Telemetry</span>'
         f'</h1>'
         f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 840px;">'
         f'Live observation of cache hit/miss ratios, read latency preservation, and backend call attenuation across time-windowed traffic.'
         f'</p>'
         f'</div>'
         f'<div style="display: flex; align-items: center; padding-top: 6px;">'
-        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
+        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.04)"}; color: {c["text_muted"]}; border: 1px solid {c["card_border"]}; border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
         f'OBSERVATION WINDOW &bull; {format_duration(obs.get("window_seconds"))}'
         f'</span>'
         f'</div>'
@@ -78,9 +78,9 @@ def render_cache_performance_view():
             subtitle=f"{format_int(backend_calls)} actual upstream calls",
             tag="OFFLOAD",
             delta="Zero-Latency Hits",
-            delta_color=c["cyan"],
+            delta_color=c["emerald"],
             progress_pct=(prevented_calls / total_reqs * 100.0) if total_reqs > 0 else 0.0,
-            progress_color=c["cyan"],
+            progress_color=c["emerald"],
             tooltip="Total backend requests completely prevented by in-memory cache hits.",
         )
 
@@ -111,14 +111,14 @@ def render_cache_performance_view():
     # --------------------------------------------------
     shield_pct = (prevented_calls / total_reqs * 100.0) if total_reqs > 0 else 0.0
     impact_html = (
-        f'<div class="hero-card" style="padding: 14px 18px; margin-top: 28px; margin-bottom: 24px; border-left: 4px solid {c["cyan"]} !important; display: flex; justify-content: space-between; align-items: center;">'
+        f'<div class="hero-card" style="padding: 14px 18px; margin-top: 28px; margin-bottom: 24px; border: 1px solid {c["card_border"]}; border-left: 3px solid {c["emerald"]} !important; display: flex; justify-content: space-between; align-items: center;">'
         f'<div style="display: flex; align-items: center; gap: 10px;">'
         f'<span style="font-size: 16px;">⚡</span>'
         f'<span style="font-size: 13px; font-weight: 700; color: {c["text"]};">'
         f'System Performance Impact: Cache currently absorbing <b>{shield_pct:.1f}%</b> of request traffic.'
         f'</span>'
         f'</div>'
-        f'<span class="badge-pill badge-active">OFFLOAD ACTIVE</span>'
+        f'<span class="badge-pill badge-protected">OFFLOAD ACTIVE</span>'
         f'</div>'
     )
     st.markdown(impact_html, unsafe_allow_html=True)
