@@ -5,12 +5,17 @@ extracted features and active WorkloadType weights, along with error handling,
 boundary clamping, and input immutability.
 """
 
+import math
 from copy import deepcopy
+from datetime import datetime, timezone
 
 import pytest
 
-from backend.adaptive.scoring import AdaptiveScorer
-from contracts.schemas import WorkloadType
+from backend.adaptive.scoring import (
+    AdaptiveScorer,
+    DynamicWeightModel,
+)
+from contracts.schemas import SystemState, WorkloadState, WorkloadType
 
 
 @pytest.fixture
@@ -31,59 +36,212 @@ def base_features() -> dict[str, float]:
     }
 
 
-def test_steady_workload_weights(
+def make_test_workload(
+    backend_latency_ms: float = 30.0,
+    request_rate: float = 100.0,
+    hit_rate: float = 0.5,
+    miss_rate: float = 0.5,
+    metrics: dict[str, float] | None = None,
+) -> WorkloadState:
+    """Helper to build a WorkloadState snapshot for testing."""
+    return WorkloadState(
+        request_rate=request_rate,
+        hit_rate=hit_rate,
+        miss_rate=miss_rate,
+        backend_latency_ms=backend_latency_ms,
+        workload_type=WorkloadType.STEADY,
+        timestamp=datetime(2026, 9, 4, 12, 0, 0, tzinfo=timezone.utc),
+        window_seconds=60.0,
+        metrics=metrics,
+    )
+
+
+def make_test_system(
+    cache_usage_bytes: int = 500,
+    cache_capacity_bytes: int = 1000,
+) -> SystemState:
+    """Helper to build a SystemState snapshot for testing."""
+    return SystemState(
+        cache_capacity_bytes=cache_capacity_bytes,
+        cache_usage_bytes=cache_usage_bytes,
+        object_count=5,
+        timestamp=datetime(2026, 9, 4, 12, 0, 0, tzinfo=timezone.utc),
+        window_seconds=60.0,
+    )
+
+
+def test_dynamic_weights_change_when_backend_latency_pressure_changes(
     scorer: AdaptiveScorer, base_features: dict[str, float]
 ) -> None:
-    """STEADY workload uses: 0.30 freq, 0.25 rec, 0.25 cost, 0.15 pop, 0.05 size.
+    """Increasing backend latency dynamically elevates the retrieval-cost weight."""
+    wl_fast = make_test_workload(backend_latency_ms=5.0)
+    wl_slow = make_test_workload(backend_latency_ms=500.0)
 
-    0.30*0.8 + 0.25*0.6 + 0.25*0.4 + 0.15*0.5 - 0.05*0.2 = 0.555
-    """
-    scores = scorer.score({"k1": base_features}, WorkloadType.STEADY)
-    assert scores["k1"] == pytest.approx(0.555)
+    scorer.score({"k1": base_features}, workload=wl_fast)
+    assert scorer.last_weights is not None
+    cost_weight_fast = scorer.last_weights.retrieval_cost
+
+    scorer.score({"k1": base_features}, workload=wl_slow)
+    assert scorer.last_weights is not None
+    cost_weight_slow = scorer.last_weights.retrieval_cost
+
+    assert cost_weight_slow > cost_weight_fast
+    assert cost_weight_slow > 0.30
 
 
-def test_read_heavy_workload_weights(
+def test_dynamic_weights_change_when_memory_utilization_changes(
     scorer: AdaptiveScorer, base_features: dict[str, float]
 ) -> None:
-    """READ_HEAVY uses: 0.40 freq, 0.30 rec, 0.15 cost, 0.10 pop, 0.05 size.
+    """Increasing cache memory utilization dynamically elevates the size-penalty weight."""
+    sys_empty = make_test_system(cache_usage_bytes=100, cache_capacity_bytes=1000)
+    sys_full = make_test_system(cache_usage_bytes=990, cache_capacity_bytes=1000)
 
-    0.40*0.8 + 0.30*0.6 + 0.15*0.4 + 0.10*0.5 - 0.05*0.2 = 0.600
-    """
-    scores = scorer.score({"k1": base_features}, WorkloadType.READ_HEAVY)
-    assert scores["k1"] == pytest.approx(0.600)
+    scorer.score({"k1": base_features}, system=sys_empty)
+    assert scorer.last_weights is not None
+    size_weight_empty = scorer.last_weights.size_penalty
+
+    scorer.score({"k1": base_features}, system=sys_full)
+    assert scorer.last_weights is not None
+    size_weight_full = scorer.last_weights.size_penalty
+
+    assert size_weight_full > size_weight_empty
+    assert size_weight_full > 0.05
 
 
-def test_compute_heavy_workload_weights(
+def test_dynamic_weights_change_when_popularity_trend_changes(
     scorer: AdaptiveScorer, base_features: dict[str, float]
 ) -> None:
-    """COMPUTE_HEAVY uses: 0.20 freq, 0.15 rec, 0.45 cost, 0.15 pop, 0.05 size.
+    """Popularity shift signals dynamically elevate the popularity-trend weight."""
+    wl_steady = make_test_workload(metrics={"popularity_shift_score": 0.0})
+    wl_shift = make_test_workload(metrics={"popularity_shift_score": 1.0})
 
-    0.20*0.8 + 0.15*0.6 + 0.45*0.4 + 0.15*0.5 - 0.05*0.2 = 0.495
-    """
-    scores = scorer.score({"k1": base_features}, WorkloadType.COMPUTE_HEAVY)
-    assert scores["k1"] == pytest.approx(0.495)
+    scorer.score({"k1": base_features}, workload=wl_steady)
+    assert scorer.last_weights is not None
+    trend_weight_steady = scorer.last_weights.popularity_trend
+
+    scorer.score({"k1": base_features}, workload=wl_shift)
+    assert scorer.last_weights is not None
+    trend_weight_shift = scorer.last_weights.popularity_trend
+
+    assert trend_weight_shift > trend_weight_steady
 
 
-def test_spike_workload_weights(
+def test_dynamic_weights_change_when_request_rate_pressure_changes(
     scorer: AdaptiveScorer, base_features: dict[str, float]
 ) -> None:
-    """SPIKE uses: 0.35 freq, 0.35 rec, 0.15 cost, 0.10 pop, 0.05 size.
+    """A surge in request rate dynamically elevates frequency and recency weights."""
+    wl_normal = make_test_workload(
+        request_rate=100.0,
+        metrics={"request_rate_baseline": 100.0},
+    )
+    wl_surge = make_test_workload(
+        request_rate=500.0,
+        metrics={"request_rate_baseline": 100.0},
+    )
 
-    0.35*0.8 + 0.35*0.6 + 0.15*0.4 + 0.10*0.5 - 0.05*0.2 = 0.590
-    """
-    scores = scorer.score({"k1": base_features}, WorkloadType.SPIKE)
-    assert scores["k1"] == pytest.approx(0.590)
+    scorer.score({"k1": base_features}, workload=wl_normal)
+    assert scorer.last_weights is not None
+    rec_normal = scorer.last_weights.recency
+
+    scorer.score({"k1": base_features}, workload=wl_surge)
+    assert scorer.last_weights is not None
+    rec_surge = scorer.last_weights.recency
+
+    assert rec_surge > rec_normal
 
 
-def test_popularity_shift_workload_weights(
+def test_same_workload_type_with_different_telemetry_produces_different_weights(
     scorer: AdaptiveScorer, base_features: dict[str, float]
 ) -> None:
-    """POPULARITY_SHIFT uses: 0.20 freq, 0.20 rec, 0.15 cost, 0.40 pop, 0.05 size.
+    """Two observations with the exact same WorkloadType produce different weights."""
+    wl_compute_low = make_test_workload(backend_latency_ms=210.0)
+    wl_compute_high = make_test_workload(backend_latency_ms=2000.0)
 
-    0.20*0.8 + 0.20*0.6 + 0.15*0.4 + 0.40*0.5 - 0.05*0.2 = 0.530
-    """
-    scores = scorer.score({"k1": base_features}, WorkloadType.POPULARITY_SHIFT)
-    assert scores["k1"] == pytest.approx(0.530)
+    scores_low = scorer.score(
+        {"k1": base_features},
+        workload_type=WorkloadType.COMPUTE_HEAVY,
+        workload=wl_compute_low,
+    )
+    weights_low = scorer.last_weights
+    assert weights_low is not None
+
+    scores_high = scorer.score(
+        {"k1": base_features},
+        workload_type=WorkloadType.COMPUTE_HEAVY,
+        workload=wl_compute_high,
+    )
+    weights_high = scorer.last_weights
+    assert weights_high is not None
+
+    # Weights and final scores differ despite sharing WorkloadType.COMPUTE_HEAVY
+    assert weights_high.retrieval_cost > weights_low.retrieval_cost
+    assert scores_high["k1"] != scores_low["k1"]
+
+
+def test_no_static_workload_type_weight_dictionary_remains() -> None:
+    """Verify that AdaptiveScorer no longer contains SCORING_WEIGHTS table."""
+    scorer_inst = AdaptiveScorer()
+    assert not hasattr(scorer_inst, "SCORING_WEIGHTS")
+    assert isinstance(scorer_inst.weight_model, DynamicWeightModel)
+
+
+def test_weights_are_normalized_and_valid(
+    scorer: AdaptiveScorer, base_features: dict[str, float]
+) -> None:
+    """Positive weights strictly sum to 0.95 and all weights are finite and non-negative."""
+    scorer.score({"k1": base_features})
+    w = scorer.last_weights
+    assert w is not None
+
+    assert w.frequency >= 0.0
+    assert w.recency >= 0.0
+    assert w.retrieval_cost >= 0.0
+    assert w.popularity_trend >= 0.0
+    assert w.size_penalty >= 0.0
+
+    pos_sum = w.frequency + w.recency + w.retrieval_cost + w.popularity_trend
+    assert pos_sum == pytest.approx(0.95)
+
+
+def test_missing_optional_telemetry_uses_neutral_fallback(
+    scorer: AdaptiveScorer, base_features: dict[str, float]
+) -> None:
+    """Calling score without workload or system telemetry safely uses neutral defaults."""
+    scores = scorer.score({"k1": base_features})
+    assert "k1" in scores
+    assert 0.0 <= scores["k1"] <= 1.0
+    assert scorer.last_weights is not None
+    assert scorer.last_weights.frequency > 0.0
+
+
+def test_invalid_telemetry_does_not_produce_nan_or_infinity(
+    scorer: AdaptiveScorer, base_features: dict[str, float]
+) -> None:
+    """Non-finite or extreme telemetry values are safely clamped without producing NaN."""
+    extreme_workload = WorkloadState(
+        request_rate=1e9,
+        hit_rate=1.0,
+        miss_rate=0.0,
+        backend_latency_ms=1e9,
+        timestamp=datetime(2026, 9, 4, 12, 0, 0, tzinfo=timezone.utc),
+        window_seconds=60.0,
+    )
+    extreme_system = SystemState(
+        cache_capacity_bytes=1000,
+        cache_usage_bytes=10000,  # over capacity
+        object_count=100,
+        timestamp=datetime(2026, 9, 4, 12, 0, 0, tzinfo=timezone.utc),
+        window_seconds=60.0,
+    )
+
+    scores = scorer.score(
+        {"k1": base_features},
+        workload=extreme_workload,
+        system=extreme_system,
+    )
+    score_val = scores["k1"]
+    assert math.isfinite(score_val)
+    assert 0.0 <= score_val <= 1.0
 
 
 def test_higher_frequency_produces_higher_score(scorer: AdaptiveScorer) -> None:
@@ -381,3 +539,357 @@ def test_callable_syntax_matches_score_method(
     score1 = scorer.score({"k1": base_features}, WorkloadType.STEADY)
     score2 = scorer({"k1": base_features}, WorkloadType.STEADY)
     assert score1 == score2
+
+
+def test_same_hit_rate_different_frequency_distribution_produces_different_pressure(
+    scorer: AdaptiveScorer,
+) -> None:
+    """Same hit rate with different access-frequency distributions yields different frequency pressures and weights."""
+    wl = make_test_workload(hit_rate=0.5, miss_rate=0.5)
+
+    # Set A: uniformly low frequency objects
+    features_low = {
+        f"item_{i}": {
+            "frequency": 0.1,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        }
+        for i in range(4)
+    }
+
+    # Set B: objects with high frequency concentration
+    features_high = {
+        "item_0": {
+            "frequency": 0.9,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "item_1": {
+            "frequency": 0.8,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "item_2": {
+            "frequency": 0.2,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "item_3": {
+            "frequency": 0.1,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+    }
+
+    scorer.score(features_low, workload=wl)
+    assert scorer.last_pressures is not None
+    assert scorer.last_weights is not None
+    p_freq_low = scorer.last_pressures["frequency_pressure"]
+    w_freq_low = scorer.last_weights.frequency
+
+    scorer.score(features_high, workload=wl)
+    assert scorer.last_pressures is not None
+    assert scorer.last_weights is not None
+    p_freq_high = scorer.last_pressures["frequency_pressure"]
+    w_freq_high = scorer.last_weights.frequency
+
+    # Despite identical workload.hit_rate (0.5), frequency pressure and weights differ
+    assert p_freq_high > p_freq_low
+    assert w_freq_high > w_freq_low
+
+
+def test_higher_repeated_access_concentration_increases_frequency_pressure() -> None:
+    """Higher concentration of repeated accesses monotonically elevates frequency pressure."""
+    model = DynamicWeightModel()
+
+    # Uniform distribution (no concentration)
+    features_uniform = {
+        f"k{i}": {
+            "frequency": 0.5,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        }
+        for i in range(4)
+    }
+
+    # Moderate concentration (mean 0.5)
+    features_moderate = {
+        "k0": {
+            "frequency": 0.8,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "k1": {
+            "frequency": 0.6,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "k2": {
+            "frequency": 0.4,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "k3": {
+            "frequency": 0.2,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+    }
+
+    # Heavy repeat concentration (Zipfian-like hot spots, mean 0.5)
+    features_skewed = {
+        "k0": {
+            "frequency": 1.0,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "k1": {
+            "frequency": 0.8,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "k2": {
+            "frequency": 0.1,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "k3": {
+            "frequency": 0.1,
+            "recency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+    }
+
+    p_uniform = model.compute_pressures(features=features_uniform)["frequency_pressure"]
+    p_moderate = model.compute_pressures(features=features_moderate)[
+        "frequency_pressure"
+    ]
+    p_skewed = model.compute_pressures(features=features_skewed)["frequency_pressure"]
+
+    assert p_skewed > p_moderate > p_uniform
+
+
+def test_frequency_pressure_remains_finite_and_bounded() -> None:
+    """Frequency pressure remains strictly in [0.0, 1.0] across boundary inputs."""
+    model = DynamicWeightModel()
+
+    all_zero = {
+        f"k{i}": {
+            "frequency": 0.0,
+            "recency": 0.0,
+            "retrieval_cost": 0.0,
+            "size": 0.0,
+            "popularity_trend": 0.0,
+        }
+        for i in range(10)
+    }
+    all_one = {
+        f"k{i}": {
+            "frequency": 1.0,
+            "recency": 1.0,
+            "retrieval_cost": 1.0,
+            "size": 1.0,
+            "popularity_trend": 1.0,
+        }
+        for i in range(10)
+    }
+
+    p_zero = model.compute_pressures(features=all_zero)["frequency_pressure"]
+    p_one = model.compute_pressures(features=all_one)["frequency_pressure"]
+
+    assert 0.0 <= p_zero <= 1.0
+    assert 0.0 <= p_one <= 1.0
+    assert math.isfinite(p_zero)
+    assert math.isfinite(p_one)
+
+
+def test_cold_start_frequency_data_does_not_crash() -> None:
+    """DynamicWeightModel does not crash on empty features or cold-start conditions."""
+    model = DynamicWeightModel()
+
+    p_empty = model.compute_pressures(features={})["frequency_pressure"]
+    p_none = model.compute_pressures(features=None)["frequency_pressure"]
+
+    assert 0.0 <= p_empty <= 1.0
+    assert 0.0 <= p_none <= 1.0
+    assert p_empty == 0.5
+    assert p_none == 0.5
+
+
+def test_same_hit_rate_different_last_accessed_recency_distribution_produces_different_pressure(
+    scorer: AdaptiveScorer,
+) -> None:
+    """Same hit rate with different recency distributions yields different recency pressures and weights."""
+    wl = make_test_workload(hit_rate=0.5, miss_rate=0.5)
+
+    # Set A: stale cache objects (low recency)
+    features_stale = {
+        f"item_{i}": {
+            "frequency": 0.5,
+            "recency": 0.1,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        }
+        for i in range(4)
+    }
+
+    # Set B: fresh cache objects (high recency)
+    features_fresh = {
+        f"item_{i}": {
+            "frequency": 0.5,
+            "recency": 0.9,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        }
+        for i in range(4)
+    }
+
+    scorer.score(features_stale, workload=wl)
+    assert scorer.last_pressures is not None
+    assert scorer.last_weights is not None
+    p_rec_stale = scorer.last_pressures["recency_pressure"]
+    w_rec_stale = scorer.last_weights.recency
+
+    scorer.score(features_fresh, workload=wl)
+    assert scorer.last_pressures is not None
+    assert scorer.last_weights is not None
+    p_rec_fresh = scorer.last_pressures["recency_pressure"]
+    w_rec_fresh = scorer.last_weights.recency
+
+    # Despite identical workload.miss_rate (0.5), recency pressure and weights differ
+    assert p_rec_fresh > p_rec_stale
+    assert w_rec_fresh > w_rec_stale
+
+
+def test_newly_active_working_set_increases_recency_pressure() -> None:
+    """Arrival of a newly active working set elevates recency pressure."""
+    model = DynamicWeightModel()
+
+    features = {
+        "k0": {
+            "frequency": 0.5,
+            "recency": 0.8,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "k1": {
+            "frequency": 0.5,
+            "recency": 0.8,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "k2": {
+            "frequency": 0.5,
+            "recency": 0.7,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+        "k3": {
+            "frequency": 0.5,
+            "recency": 0.7,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+    }
+
+    # Case 1: Stable working set (keys were already active in previous window)
+    prev_stable = {"k0": 10, "k1": 10, "k2": 10, "k3": 10}
+    p_stable = model.compute_pressures(
+        features=features,
+        previous_access_counts=prev_stable,
+    )["recency_pressure"]
+
+    # Case 2: Newly active working set (k0..k3 are new keys not seen in previous window)
+    prev_disjoint = {"old_a": 10, "old_b": 10}
+    p_new_set = model.compute_pressures(
+        features=features,
+        previous_access_counts=prev_disjoint,
+    )["recency_pressure"]
+
+    assert p_new_set > p_stable
+
+
+def test_recency_pressure_remains_finite_and_bounded() -> None:
+    """Recency pressure remains strictly in [0.0, 1.0] across extreme inputs."""
+    model = DynamicWeightModel()
+
+    all_zero = {
+        f"k{i}": {
+            "frequency": 0.0,
+            "recency": 0.0,
+            "retrieval_cost": 0.0,
+            "size": 0.0,
+            "popularity_trend": 0.0,
+        }
+        for i in range(5)
+    }
+    all_one = {
+        f"k{i}": {
+            "frequency": 1.0,
+            "recency": 1.0,
+            "retrieval_cost": 1.0,
+            "size": 1.0,
+            "popularity_trend": 1.0,
+        }
+        for i in range(5)
+    }
+
+    p_zero = model.compute_pressures(features=all_zero)["recency_pressure"]
+    p_one = model.compute_pressures(features=all_one)["recency_pressure"]
+
+    assert 0.0 <= p_zero <= 1.0
+    assert 0.0 <= p_one <= 1.0
+    assert math.isfinite(p_zero)
+    assert math.isfinite(p_one)
+
+
+def test_missing_recency_data_uses_deterministic_fallback() -> None:
+    """DynamicWeightModel provides safe deterministic fallback for missing recency data."""
+    model = DynamicWeightModel()
+
+    # Features missing recency key
+    partial_features = {
+        "k0": {
+            "frequency": 0.5,
+            "retrieval_cost": 0.5,
+            "size": 0.5,
+            "popularity_trend": 0.5,
+        },
+    }
+    pressures = model.compute_pressures(features=partial_features)
+    assert 0.0 <= pressures["recency_pressure"] <= 1.0
+    assert math.isfinite(pressures["recency_pressure"])

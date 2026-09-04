@@ -1,6 +1,6 @@
+import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-import json
 from typing import Any
 
 

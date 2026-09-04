@@ -822,3 +822,29 @@ def test_input_objects_not_mutated(engine: DecisionEngine, now: datetime) -> Non
 
     assert list(objs.keys()) == ["k1"]
     assert objs["k1"].access_count == 5
+
+
+def test_refresh_urgencies_in_metadata(engine: DecisionEngine, now: datetime) -> None:
+    """Verify decision.metadata contains continuous refresh urgencies for all objects."""
+    objs = {
+        "k_fresh": make_object("k_fresh", last_accessed=now - timedelta(seconds=10)),
+        "k_stale": make_object("k_stale", last_accessed=now - timedelta(seconds=400)),
+    }
+    workload = make_workload(now)
+    system = make_system(now)
+
+    decision = engine.decide(
+        objects=objs,
+        workload=workload,
+        system=system,
+        min_capacity_bytes=500,
+        max_capacity_bytes=2000,
+        now=now,
+    )
+
+    assert "refresh_urgencies" in decision.metadata
+    urgencies = decision.metadata["refresh_urgencies"]
+    assert "k_fresh" in urgencies
+    assert "k_stale" in urgencies
+    assert 0.0 <= urgencies["k_fresh"] < 0.20
+    assert urgencies["k_stale"] >= 0.50
