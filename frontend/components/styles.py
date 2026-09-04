@@ -147,6 +147,10 @@ def apply_global_styles():
         seg_active_shadow = "0 2px 8px rgba(0, 0, 0, 0.2)"
         seg_active_color = "#F5F5F5"
         seg_inactive_color = "#A1A1AA"
+        blob_purple = "rgba(124, 58, 237, 0.13)"   # #7C3AED with 0.13 opacity
+        blob_magenta = "rgba(219, 39, 119, 0.10)"  # #DB2777 with 0.10 opacity
+        blob_blue = "rgba(37, 99, 235, 0.11)"      # #2563EB with 0.11 opacity
+        blob_orange = "rgba(249, 115, 22, 0.08)"   # #F97316 with 0.08 opacity
     else:
         body_bg_color = "#F4F4F5"
         body_gradient = (
@@ -173,6 +177,10 @@ def apply_global_styles():
         seg_active_shadow = "0 2px 6px rgba(0, 0, 0, 0.06)"
         seg_active_color = "#18181B"
         seg_inactive_color = "#52525B"
+        blob_purple = "rgba(124, 58, 237, 0.04)"   # Ultra-subtle frosted light mode
+        blob_magenta = "rgba(219, 39, 119, 0.03)"  # Ultra-subtle frosted light mode
+        blob_blue = "rgba(37, 99, 235, 0.035)"     # Ultra-subtle frosted light mode
+        blob_orange = "rgba(249, 115, 22, 0.025)"  # Ultra-subtle frosted light mode
 
     sidebar_link_color = "#A1A1AA" if dark else "#52525B"
     sidebar_hover_bg = (
@@ -203,6 +211,143 @@ def apply_global_styles():
             color: {c["text"]} !important;
             margin: 0 !important;
             padding: 0 !important;
+        }}
+
+        /* Ambient Abstract Liquid Gradient Blob Layer */
+        .ambient-gradient-backdrop {{
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+            pointer-events: none !important;
+            z-index: 0 !important;
+        }}
+
+        div[data-testid="element-container"]:has(.ambient-gradient-backdrop),
+        div[data-testid="stMarkdown"]:has(.ambient-gradient-backdrop),
+        div[data-testid="stMarkdownContainer"]:has(.ambient-gradient-backdrop) {{
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            pointer-events: none !important;
+            line-height: 0 !important;
+        }}
+
+        .gradient-blob {{
+            position: absolute !important;
+            border-radius: 50% !important;
+            pointer-events: none !important;
+            will-change: transform !important;
+            transform: translate3d(0, 0, 0) !important;
+        }}
+
+        /* Blob 1: Upper-left Purple (#7C3AED) */
+        .blob-purple {{
+            top: -140px !important;
+            left: -100px !important;
+            width: 680px !important;
+            height: 620px !important;
+            background: radial-gradient(circle, {blob_purple} 0%, rgba(124, 58, 237, 0) 70%) !important;
+            border-radius: 52% 48% 64% 36% / 44% 56% 44% 56% !important;
+            filter: blur(95px) !important;
+            -webkit-filter: blur(95px) !important;
+            animation: blobDrift1 26s ease-in-out infinite alternate !important;
+        }}
+
+        /* Blob 2: Upper-right Magenta (#DB2777) */
+        .blob-magenta {{
+            top: -80px !important;
+            right: -120px !important;
+            width: 640px !important;
+            height: 590px !important;
+            background: radial-gradient(circle, {blob_magenta} 0%, rgba(219, 39, 119, 0) 70%) !important;
+            border-radius: 44% 56% 40% 60% / 58% 42% 58% 42% !important;
+            filter: blur(105px) !important;
+            -webkit-filter: blur(105px) !important;
+            animation: blobDrift2 30s ease-in-out infinite alternate !important;
+        }}
+
+        /* Blob 3: Middle-lower Blue (#2563EB) */
+        .blob-blue {{
+            bottom: 12% !important;
+            left: -80px !important;
+            width: 660px !important;
+            height: 620px !important;
+            background: radial-gradient(circle, {blob_blue} 0%, rgba(37, 99, 235, 0) 70%) !important;
+            border-radius: 58% 42% 46% 54% / 48% 52% 48% 52% !important;
+            filter: blur(110px) !important;
+            -webkit-filter: blur(110px) !important;
+            animation: blobDrift3 28s ease-in-out infinite alternate !important;
+        }}
+
+        /* Blob 4: Lower-right Orange (#F97316) */
+        .blob-orange {{
+            bottom: -100px !important;
+            right: -80px !important;
+            width: 600px !important;
+            height: 560px !important;
+            background: radial-gradient(circle, {blob_orange} 0%, rgba(249, 115, 22, 0) 70%) !important;
+            border-radius: 46% 54% 56% 44% / 52% 48% 52% 48% !important;
+            filter: blur(95px) !important;
+            -webkit-filter: blur(95px) !important;
+            animation: blobDrift4 24s ease-in-out infinite alternate !important;
+        }}
+
+        /* Extremely subtle, slow liquid drift animations (24s-30s cycle) */
+        @keyframes blobDrift1 {{
+            0%, 100% {{ transform: translate(0, 0) scale(1); }}
+            50% {{ transform: translate(25px, -18px) scale(1.04); }}
+        }}
+        @keyframes blobDrift2 {{
+            0%, 100% {{ transform: translate(0, 0) scale(1); }}
+            50% {{ transform: translate(-22px, 20px) scale(0.96); }}
+        }}
+        @keyframes blobDrift3 {{
+            0%, 100% {{ transform: translate(0, 0) scale(1); }}
+            50% {{ transform: translate(18px, 22px) scale(1.03); }}
+        }}
+        @keyframes blobDrift4 {{
+            0%, 100% {{ transform: translate(0, 0) scale(1); }}
+            50% {{ transform: translate(-20px, -18px) scale(0.97); }}
+        }}
+
+        /* Accessibility & Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {{
+            .blob-purple, .blob-magenta, .blob-blue, .blob-orange {{
+                animation: none !important;
+            }}
+        }}
+
+        /* Responsive Scaling for Laptops & Tablets */
+        @media (max-width: 1280px) {{
+            .blob-purple, .blob-magenta, .blob-blue, .blob-orange {{
+                filter: blur(75px) !important;
+                -webkit-filter: blur(75px) !important;
+                opacity: 0.85 !important;
+            }}
+            .blob-purple {{ width: 500px !important; height: 460px !important; }}
+            .blob-magenta {{ width: 480px !important; height: 440px !important; }}
+            .blob-blue {{ width: 490px !important; height: 460px !important; }}
+            .blob-orange {{ width: 450px !important; height: 420px !important; }}
+        }}
+
+        @media (max-width: 768px) {{
+            .blob-purple, .blob-magenta, .blob-blue, .blob-orange {{
+                filter: blur(60px) !important;
+                -webkit-filter: blur(60px) !important;
+                opacity: 0.7 !important;
+            }}
+            .blob-purple {{ width: 340px !important; height: 320px !important; }}
+            .blob-magenta {{ width: 320px !important; height: 300px !important; }}
+            .blob-blue {{ width: 330px !important; height: 310px !important; }}
+            .blob-orange {{ width: 300px !important; height: 280px !important; }}
         }}
 
         /* Completely Hide Streamlit Header, Top Decoration, Sidebar & Collapse Triggers */
@@ -238,6 +383,8 @@ def apply_global_styles():
         .block-container,
         [data-testid="stMainBlockContainer"],
         div[data-testid="stAppViewBlockContainer"] {{
+            position: relative !important;
+            z-index: 1 !important;
             width: 100% !important;
             max-width: 1440px !important;
             margin-left: auto !important;
@@ -712,10 +859,16 @@ def apply_global_styles():
 
     </style>
     """
-    if hasattr(st, "html"):
-        st.html(css)
-    else:
-        st.markdown(css, unsafe_allow_html=True)
+    blob_html = """
+    <div class="ambient-gradient-backdrop" aria-hidden="true">
+        <div class="gradient-blob blob-purple"></div>
+        <div class="gradient-blob blob-magenta"></div>
+        <div class="gradient-blob blob-blue"></div>
+        <div class="gradient-blob blob-orange"></div>
+    </div>
+    """
+    full_output = f"{blob_html}\n{css}"
+    st.markdown(full_output, unsafe_allow_html=True)
 
 
 def render_top_control_bar(active_page: str = "Overview"):
