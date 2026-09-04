@@ -1,4 +1,64 @@
-.env
-.venv/
+# Byte-compiled / optimized / C-extensions
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+*.pem
+*.key
+
+# Streamlit
+.streamlit/secrets.toml
+
+# IDEs and Editors
+.vscode/
+.idea/
+pyrefly.toml
+*.swp
+*.swo
+*~
+
+# Operating System
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Testing and Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Logs and databases
+*.log
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary benchmark / run output artifacts (preserve .gitkeep)
+benchmark/results/*
+!benchmark/results/.gitkeep
+
+# Node / Web (if applicable)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
