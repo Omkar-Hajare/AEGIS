@@ -41,7 +41,10 @@ class TestCacheManager(unittest.TestCase):
         deleted = mgr.delete("target_key")
         mock_store.delete.assert_called_once_with("target_key")
         self.assertTrue(deleted)
-        self.assertIsNone(mgr.get_metadata("target_key"), "Metadata must be deleted when key is deleted")
+        self.assertIsNone(
+            mgr.get_metadata("target_key"),
+            "Metadata must be deleted when key is deleted",
+        )
 
     def test_delegation_exists(self):
         """Verify CacheManager.exists() delegates directly to the underlying CacheStore."""
@@ -61,7 +64,9 @@ class TestCacheManager(unittest.TestCase):
             "Cached value should not implicitly produce metadata",
         )
 
-        self.manager.create_metadata("meta_only", size_bytes=100, retrieval_cost_ms=25.0)
+        self.manager.create_metadata(
+            "meta_only", size_bytes=100, retrieval_cost_ms=25.0
+        )
         self.assertIsNotNone(self.manager.get_metadata("meta_only"))
         self.assertIsNone(
             self.manager.get("meta_only"),
@@ -74,13 +79,17 @@ class TestCacheManager(unittest.TestCase):
 
     def test_metadata_lifecycle(self):
         """Verify creating, explicitly setting, retrieving, and clearing metadata."""
-        meta1 = self.manager.create_metadata("item:1", size_bytes=120, retrieval_cost_ms=15.0)
+        meta1 = self.manager.create_metadata(
+            "item:1", size_bytes=120, retrieval_cost_ms=15.0
+        )
         self.assertEqual(meta1.key, "item:1")
         self.assertEqual(meta1.access_count, 1)
         self.assertEqual(meta1.miss_count, 1)
         self.assertEqual(meta1.hit_count, 0)
 
-        meta2 = CacheObjectMetadata(key="item:2", size_bytes=240, retrieval_cost_ms=30.0)
+        meta2 = CacheObjectMetadata(
+            key="item:2", size_bytes=240, retrieval_cost_ms=30.0
+        )
         self.manager.set_metadata("item:2", meta2)
 
         all_meta = self.manager.get_all_metadata()
@@ -119,6 +128,41 @@ class TestCacheManager(unittest.TestCase):
         self.manager.record_miss("unknown:key")
         self.manager.record_backend_retrieval("unknown:key", 50.0)
         self.assertIsNone(self.manager.get_metadata("unknown:key"))
+
+    def test_invalidate_existing_key_deletes_value_and_metadata(self):
+        """Verify CacheManager.invalidate() deletes an existing key and removes metadata."""
+        self.manager.set("target_item", {"data": 123})
+        self.manager.create_metadata(
+            "target_item", size_bytes=100, retrieval_cost_ms=15.0
+        )
+
+        self.assertTrue(self.manager.exists("target_item"))
+        self.assertIsNotNone(self.manager.get_metadata("target_item"))
+
+        # Invalidate
+        result = self.manager.invalidate("target_item")
+        self.assertTrue(result)
+        self.assertFalse(self.manager.exists("target_item"))
+        self.assertIsNone(self.manager.get("target_item"))
+        self.assertIsNone(self.manager.get_metadata("target_item"))
+
+    def test_invalidate_missing_key_returns_false(self):
+        """Verify CacheManager.invalidate() returns False when key does not exist."""
+        result = self.manager.invalidate("non_existent_key")
+        self.assertFalse(result)
+
+    def test_invalidate_delegation_to_delete(self):
+        """Verify CacheManager.invalidate() delegates to delete()."""
+        mock_store = MagicMock(spec=CacheStore)
+        mock_store.delete.return_value = True
+        mgr = CacheManager(mock_store)
+
+        mgr.create_metadata("delegated_key", size_bytes=50, retrieval_cost_ms=5.0)
+        res = mgr.invalidate("delegated_key")
+
+        self.assertTrue(res)
+        mock_store.delete.assert_called_once_with("delegated_key")
+        self.assertIsNone(mgr.get_metadata("delegated_key"))
 
 
 if __name__ == "__main__":
