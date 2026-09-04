@@ -3,8 +3,7 @@ from typing import Any
 
 from fastapi import APIRouter
 
-from cache.in_memory import InMemoryCache
-from cache.manager import CacheManager
+from cache.factory import create_cache_manager
 from cache.metadata import calculate_payload_size_bytes
 from telemetry.collector import telemetry_collector
 from workload.product_api import get_product_data
@@ -12,8 +11,8 @@ from workload.recommendation_api import get_recommendation_data
 
 router = APIRouter(prefix="/data", tags=["data"])
 
-# Application-level CacheManager using InMemoryCache
-cache_manager = CacheManager(InMemoryCache())
+# Application-level CacheManager configured via factory based on settings
+cache_manager = create_cache_manager()
 
 
 @router.get("/product/{product_id}")

@@ -5,6 +5,10 @@ class Settings(BaseSettings):
     app_name: str = "Adaptive Cache System"
     app_version: str = "0.1.0"
     cache_backend: str = "inmemory"
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: str = ""
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),
