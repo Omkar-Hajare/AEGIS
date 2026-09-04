@@ -3,15 +3,15 @@ import { check, sleep } from "k6";
 import { BASE_URL } from "../config.js";
 
 const DEFAULT_PRODUCTS_A = [
-  "/products/1",
-  "/products/2",
-  "/products/3",
+  "/data/product/1",
+  "/data/product/2",
+  "/data/product/3",
 ];
 
 const DEFAULT_PRODUCTS_B = [
-  "/products/7",
-  "/products/8",
-  "/products/9",
+  "/data/product/7",
+  "/data/product/8",
+  "/data/product/9",
 ];
 
 function getPaths(value, fallback) {
@@ -36,7 +36,13 @@ export const options = {
     { duration: "60s", target: 10 },
     { duration: "30s", target: 0 },
   ],
+  thresholds: {
+    http_req_failed: ["rate<0.01"],
+    http_req_duration: ["p(95)<500"],
+  },
 };
+
+const SLEEP_SECONDS = __ENV.SLEEP_SECONDS !== undefined ? parseFloat(__ENV.SLEEP_SECONDS) : 1;
 
 export default function () {
   const products = __ITER % 2 === 0
@@ -46,11 +52,15 @@ export default function () {
   const product =
     products[Math.floor(Math.random() * products.length)];
 
-  const response = http.get(`${BASE_URL}${product}`);
+  const response = http.get(`${BASE_URL}${product}`, {
+    tags: { name: "product_lookup" },
+  });
 
   check(response, {
     "status is 200": (r) => r.status === 200,
   });
 
-  sleep(1);
+  if (SLEEP_SECONDS > 0) {
+    sleep(SLEEP_SECONDS);
+  }
 }
