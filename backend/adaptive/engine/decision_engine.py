@@ -23,6 +23,7 @@ from backend.adaptive.features import FeatureExtractor
 from backend.adaptive.refresh import RefreshPolicy
 from backend.adaptive.scoring import AdaptiveScorer
 from backend.adaptive.workload import WorkloadAnalyzer
+from backend.cost import CostModel
 from contracts.schemas import (
     CacheObject,
     Decision,
@@ -48,6 +49,7 @@ class DecisionEngine:
         capacity_controller: CapacityController | None = None,
         eviction_policy: EvictionPolicy | None = None,
         capacity_mode: str = "rule_based",
+        cost_model: CostModel | None = None,
     ) -> None:
         """Initialize DecisionEngine with optional injected components."""
         self.feature_extractor = feature_extractor or FeatureExtractor()
@@ -55,7 +57,12 @@ class DecisionEngine:
         self.scorer = scorer or AdaptiveScorer()
         self.refresh_policy = refresh_policy or RefreshPolicy()
         self.capacity_controller = capacity_controller or CapacityController()
-        self.eviction_policy = eviction_policy or EvictionPolicy()
+        self.cost_model = (
+            cost_model or getattr(eviction_policy, "cost_model", None) or CostModel()
+        )
+        self.eviction_policy = eviction_policy or EvictionPolicy(
+            cost_model=self.cost_model
+        )
         self.capacity_mode = capacity_mode
 
     def decide(
@@ -168,6 +175,7 @@ class DecisionEngine:
                 target_capacity_bytes=recommended_capacity,
                 workload=workload,
                 system=system,
+                cost_model=self.cost_model,
             )
         else:
             eviction_keys = []
@@ -203,6 +211,15 @@ class DecisionEngine:
                 "target_capacity_bytes": recommended_capacity,
             },
         }
+
+        # Expose active cost profile for platform economics audit
+        if (
+            hasattr(self, "cost_model")
+            and self.cost_model is not None
+            and hasattr(self.cost_model, "profile")
+            and self.cost_model.profile is not None
+        ):
+            metadata["cost_profile"] = self.cost_model.profile.name
 
         # Expose dynamic weights and pressures for audit and explainability
         if (
