@@ -85,6 +85,14 @@ BACKEND_AVG_LATENCY_MS = Gauge(
     "Average backend latency in milliseconds for the current window",
 )
 
+# ──────────────────────────────────────────────
+# ADAPTIVE SYSTEM METRICS
+# ──────────────────────────────────────────────
+ADAPTIVE_DECISIONS = Counter(
+    "adaptive_decisions_total",
+    "Total adaptive decisions evaluated",
+)
+
 
 def sync_from_telemetry(telemetry_collector, cache_manager=None):
     """Copy current in-process telemetry state into Prometheus gauges.
