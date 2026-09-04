@@ -12,6 +12,8 @@ export const options = {
   ],
 };
 
+const SLEEP_SECONDS = __ENV.SLEEP_SECONDS !== undefined ? parseFloat(__ENV.SLEEP_SECONDS) : 1;
+
 export default function () {
   const response = http.get(`${BASE_URL}${TARGET_PATH}`);
 
@@ -19,5 +21,7 @@ export default function () {
     "status is 200": (r) => r.status === 200,
   });
 
-  sleep(1);
+  if (SLEEP_SECONDS > 0) {
+    sleep(SLEEP_SECONDS);
+  }
 }

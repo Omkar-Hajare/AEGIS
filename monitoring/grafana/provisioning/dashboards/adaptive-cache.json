@@ -370,7 +370,7 @@
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\".*(backend|fastapi).*\", container!=\"POD\", container!=\"\"}[1m]))",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\".*(backend|fastapi).*\", container!=\"POD\"}[1m]))",
           "legendFormat": "CPU Cores"
         }
       ],
@@ -392,7 +392,7 @@
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{pod=~\".*(backend|fastapi).*\", container!=\"POD\", container!=\"\"})",
+          "expr": "sum(container_memory_working_set_bytes{pod=~\".*(backend|fastapi).*\", container!=\"POD\"})",
           "legendFormat": "Memory"
         }
       ],
@@ -414,11 +414,11 @@
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "kube_hpa_status_current_replicas{hpa=~\".*(backend|fastapi).*\"}",
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler=~\".*(backend|fastapi).*\"} or kube_hpa_status_current_replicas{hpa=~\".*(backend|fastapi).*\"}",
           "legendFormat": "Current Replicas"
         },
         {
-          "expr": "kube_hpa_status_desired_replicas{hpa=~\".*(backend|fastapi).*\"}",
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler=~\".*(backend|fastapi).*\"} or kube_hpa_status_desired_replicas{hpa=~\".*(backend|fastapi).*\"}",
           "legendFormat": "Desired Replicas"
         }
       ],
