@@ -105,7 +105,7 @@ def render_system_view():
 
     with col_arch:
         st.markdown(
-            f'<div style="margin-top: 28px; margin-bottom: 10px;">'
+            f'<div style="margin-top: 32px; margin-bottom: 12px;">'
             f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">'
             f'Runtime Topology & Boundaries'
             f'</h3>'
@@ -114,20 +114,20 @@ def render_system_view():
         )
 
         subsystem_html = (
-            f'<div class="hero-card" style="padding: 16px 18px; margin-bottom: 14px; border-radius: 10px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
+            f'<div class="hero-card" style="padding: 20px 22px; margin-bottom: 16px; border-radius: 12px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
             f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">'
             f'<span style="font-size: 13.5px; font-weight: 700; color: {c["text"]};">Backend Cache Abstraction</span>'
             f'<span class="badge-pill badge-protected">ONLINE</span>'
             f'</div>'
-            f'<p style="font-size: 12px; color: {c["text_muted"]}; margin: 0 0 10px 0; line-height: 1.45;">'
+            f'<p style="font-size: 12px; color: {c["text_muted"]}; margin: 0 0 12px 0; line-height: 1.45;">'
             f'Managed by FastAPI <code>create_cache_manager()</code>. Employs in-memory or Redis key-value storage with automatic metadata tracking.'
             f'</p>'
             f'<div style="display: flex; gap: 8px;">'
-            f'<span style="font-size: 10.5px; font-weight: 700; color: {c["text"]}; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; border: 1px solid {c["card_border"]}; padding: 2px 7px; border-radius: 4px;">Memory: {format_bytes(usage_bytes)}</span>'
-            f'<span style="font-size: 10.5px; font-weight: 700; color: {c["emerald"]}; background: {"rgba(34, 197, 94, 0.10)" if c["is_dark"] else "rgba(34, 197, 94, 0.08)"}; border: 1px solid {"rgba(34, 197, 94, 0.20)" if c["is_dark"] else "rgba(34, 197, 94, 0.15)"}; padding: 2px 7px; border-radius: 4px;">Objects: {format_int(object_count)}</span>'
+            f'<span style="font-size: 10.5px; font-weight: 700; color: {c["text"]}; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; border: 1px solid {c["card_border"]}; padding: 3px 8px; border-radius: 5px;">Memory: {format_bytes(usage_bytes)}</span>'
+            f'<span style="font-size: 10.5px; font-weight: 700; color: {c["emerald"]}; background: {"rgba(34, 197, 94, 0.10)" if c["is_dark"] else "rgba(34, 197, 94, 0.08)"}; border: 1px solid {"rgba(34, 197, 94, 0.20)" if c["is_dark"] else "rgba(34, 197, 94, 0.15)"}; padding: 3px 8px; border-radius: 5px;">Objects: {format_int(object_count)}</span>'
             f'</div>'
             f'</div>'
-            f'<div class="hero-card" style="padding: 16px 18px; border-radius: 10px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
+            f'<div class="hero-card" style="padding: 20px 22px; border-radius: 12px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
             f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">'
             f'<span style="font-size: 13.5px; font-weight: 700; color: {c["text"]};">Telemetry State Collector</span>'
             f'<span class="badge-pill badge-active">WINDOW ACTIVE</span>'
@@ -141,16 +141,18 @@ def render_system_view():
 
     with col_reset:
         st.markdown(
-            f'<h3 style="font-size: 1.15rem; font-weight: 700; color: {c["text"]}; margin-bottom: 12px;">'
+            f'<div style="margin-top: 32px; margin-bottom: 12px;">'
+            f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">'
             f'Telemetry Window Lifecycle'
-            f'</h3>',
+            f'</h3>'
+            f'</div>',
             unsafe_allow_html=True,
         )
 
         reset_card_html = (
-            f'<div class="decision-card" style="padding: 16px; margin-bottom: 14px; border-radius: 10px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
+            f'<div class="decision-card" style="padding: 22px 24px; margin-bottom: 18px; border-radius: 12px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
             f'<span style="font-size: 11px; font-weight: 700; color: {c["amber"]}; text-transform: uppercase; letter-spacing: 0.5px;">STATE-CHANGING ACTION:</span>'
-            f'<p style="font-size: 12px; color: {c["text"]}; margin: 8px 0 12px 0; line-height: 1.45;">'
+            f'<p style="font-size: 12px; color: {c["text"]}; margin: 8px 0 12px 0; line-height: 1.5;">'
             f'Triggering a window reset rotates the active observation window into the previous history window and resets rate/call counters.<br>'
             f'<b>Important:</b> This resets window telemetry only; it <u>does not delete</u> cached objects or in-memory data.'
             f'</p>'

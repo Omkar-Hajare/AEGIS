@@ -123,7 +123,7 @@ def render_cost_analysis_view():
 
     with col_formula:
         st.markdown(
-            f'<div style="margin-top: 28px; margin-bottom: 10px;">'
+            f'<div style="margin-top: 32px; margin-bottom: 12px;">'
             f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">'
             f'Economic Value Density Formulation'
             f'</h3>'
@@ -131,9 +131,9 @@ def render_cost_analysis_view():
             unsafe_allow_html=True,
         )
         formula_html = (
-            f'<div class="decision-card" style="padding: 18px; margin-bottom: 14px; border-radius: 10px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
+            f'<div class="decision-card" style="padding: 22px 24px; margin-bottom: 20px; border-radius: 12px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
             f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">OBJECT UTILITY VALUE (GDSF FORMULA)</span>'
-            f'<div style="font-family: monospace; font-size: 16px; font-weight: 800; color: {c["text"]}; margin: 10px 0; background: {c["card_bg_elevated"]}; padding: 10px 14px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
+            f'<div style="font-family: monospace; font-size: 15px; font-weight: 800; color: {c["text"]}; margin: 10px 0; background: {c["card_bg_elevated"]}; padding: 10px 14px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
             f'Utility(i) = L + (Cost(i) &times; Freq(i)) / Size(i)'
             f'</div>'
             f'<ul style="font-size: 12px; color: {c["text_muted"]}; margin: 8px 0 0 18px; line-height: 1.6;">'
@@ -148,24 +148,26 @@ def render_cost_analysis_view():
 
     with col_signals:
         st.markdown(
-            f'<h3 style="font-size: 1.15rem; font-weight: 700; color: {c["text"]}; margin-bottom: 12px;">'
+            f'<div style="margin-top: 32px; margin-bottom: 12px;">'
+            f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">'
             f'Signal Classification Taxonomy'
-            f'</h3>',
+            f'</h3>'
+            f'</div>',
             unsafe_allow_html=True,
         )
         tax_html = (
-            f'<div class="hero-card" style="padding: 18px; border-radius: 10px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
+            f'<div class="hero-card" style="padding: 22px 24px; border-radius: 12px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
             f'<div style="margin-bottom: 12px;">'
-            f'<span style="background: {"rgba(34, 197, 94, 0.12)" if c["is_dark"] else "rgba(34, 197, 94, 0.10)"}; color: {c["emerald"]}; border: 1px solid {"rgba(34, 197, 94, 0.25)" if c["is_dark"] else "rgba(34, 197, 94, 0.20)"}; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">[MEASURED]</span>'
-            f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px;">Directly gathered telemetry: backend retrieval duration (ms), total requests, cache hits, backend calls.</div>'
+            f'<span style="background: {"rgba(34, 197, 94, 0.12)" if c["is_dark"] else "rgba(34, 197, 94, 0.10)"}; color: {c["emerald"]}; border: 1px solid {"rgba(34, 197, 94, 0.25)" if c["is_dark"] else "rgba(34, 197, 94, 0.20)"}; padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 800;">[MEASURED]</span>'
+            f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 5px; line-height: 1.45;">Directly gathered telemetry: backend retrieval duration (ms), total requests, cache hits, backend calls.</div>'
             f'</div>'
             f'<div style="margin-bottom: 12px;">'
-            f'<span style="background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; color: {c["text_muted"]}; border: 1px solid {c["card_border"]}; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">[DERIVED]</span>'
-            f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px;">Computed telemetry combinations: cumulative time saved (hits &times; latency), hit/miss percentages, offload ratio.</div>'
+            f'<span style="background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.05)"}; color: {c["text_muted"]}; border: 1px solid {c["card_border"]}; padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 800;">[DERIVED]</span>'
+            f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 5px; line-height: 1.45;">Computed telemetry combinations: cumulative time saved (hits &times; latency), hit/miss percentages, offload ratio.</div>'
             f'</div>'
             f'<div>'
-            f'<span style="background: {"rgba(167, 139, 250, 0.12)" if c["is_dark"] else "rgba(167, 139, 250, 0.10)"}; color: {c["purple"]}; border: 1px solid {"rgba(167, 139, 250, 0.25)" if c["is_dark"] else "rgba(167, 139, 250, 0.20)"}; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800;">[PROJECTED]</span>'
-            f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px;">Simulated economic savings: waiting for Person 1 adaptive engine integration and backend monetary API exposure.</div>'
+            f'<span style="background: {"rgba(167, 139, 250, 0.12)" if c["is_dark"] else "rgba(167, 139, 250, 0.10)"}; color: {c["purple"]}; border: 1px solid {"rgba(167, 139, 250, 0.25)" if c["is_dark"] else "rgba(167, 139, 250, 0.20)"}; padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 800;">[PROJECTED]</span>'
+            f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 5px; line-height: 1.45;">Simulated economic savings: waiting for Person 1 adaptive engine integration and backend monetary API exposure.</div>'
             f'</div>'
             f'</div>'
         )

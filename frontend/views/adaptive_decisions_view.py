@@ -94,33 +94,33 @@ def render_adaptive_decisions_view():
     s1, s2, s3, s4 = st.columns(4)
     with s1:
         st.markdown(
-            f"""<div class="status-card" style="padding: 10px 12px;">
+            f"""<div class="status-card" style="padding: 14px 16px; border-radius: 10px; margin-bottom: 0;">
                 <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">REQUEST VELOCITY</span>
-                <div style="font-size: 15px; font-weight: 800; color: {c['text']};">{format_request_rate(obs.get("request_rate", 0.0))}</div>
+                <div style="font-size: 16px; font-weight: 800; color: {c['text']}; margin-top: 2px;">{format_request_rate(obs.get("request_rate", 0.0))}</div>
             </div>""",
             unsafe_allow_html=True,
         )
     with s2:
         st.markdown(
-            f"""<div class="status-card" style="padding: 10px 12px;">
+            f"""<div class="status-card" style="padding: 14px 16px; border-radius: 10px; margin-bottom: 0;">
                 <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">CURRENT HIT RATIO</span>
-                <div style="font-size: 15px; font-weight: 800; color: {c['emerald']};">{format_percentage(obs.get("hit_rate", 0.0))}</div>
+                <div style="font-size: 16px; font-weight: 800; color: {c['emerald']}; margin-top: 2px;">{format_percentage(obs.get("hit_rate", 0.0))}</div>
             </div>""",
             unsafe_allow_html=True,
         )
     with s3:
         st.markdown(
-            f"""<div class="status-card" style="padding: 10px 12px;">
+            f"""<div class="status-card" style="padding: 14px 16px; border-radius: 10px; margin-bottom: 0;">
                 <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">BACKEND RETRIEVAL DELAY</span>
-                <div style="font-size: 15px; font-weight: 800; color: {c['purple']};">{format_latency(obs.get("backend_latency_ms", 0.0))}</div>
+                <div style="font-size: 16px; font-weight: 800; color: {c['purple']}; margin-top: 2px;">{format_latency(obs.get("backend_latency_ms", 0.0))}</div>
             </div>""",
             unsafe_allow_html=True,
         )
     with s4:
         st.markdown(
-            f"""<div class="status-card" style="padding: 10px 12px;">
+            f"""<div class="status-card" style="padding: 14px 16px; border-radius: 10px; margin-bottom: 0;">
                 <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">CACHE USAGE</span>
-                <div style="font-size: 15px; font-weight: 800; color: {c['amber']};">{format_bytes(sys_state.get("cache_usage_bytes", 0))}</div>
+                <div style="font-size: 16px; font-weight: 800; color: {c['amber']}; margin-top: 2px;">{format_bytes(sys_state.get("cache_usage_bytes", 0))}</div>
             </div>""",
             unsafe_allow_html=True,
         )

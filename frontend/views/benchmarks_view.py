@@ -128,7 +128,7 @@ def render_benchmarks_view():
     # 4-QUADRANT BENCHMARK COMPARISON CHARTS
     # --------------------------------------------------
     st.markdown(
-        f"""<div style="margin: 28px 0 10px 0;">
+        f"""<div style="margin: 32px 0 14px 0;">
             <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                 Heuristic Performance Comparison (4-Quadrant Benchmark)
             </h3>
@@ -173,15 +173,15 @@ def render_benchmarks_view():
     with col_chart4:
         render_comparison_bar_chart(
             categories=policies,
-            values_dict={"Backend Calls": list(df["backend_calls"])},
-            title="Database & 3rd Party Miss Requests [Lower is Better]",
-            y_title="Backend Miss Calls",
-            unit=" calls",
+            values_dict={"Thrash Rate (%)": list(df["eviction_thrash_rate"])},
+            title="Eviction Thrashing Rate (%) [Lower is Better]",
+            y_title="Thrash Rate (%)",
+            unit="%",
             height=290,
         )
 
     st.markdown(
-        f'<div style="height: 1px; background: {c["card_border"]}; margin: 20px 0;"></div>',
+        f'<div style="height: 1px; background: {c["card_border"]}; margin: 32px 0 20px 0;"></div>',
         unsafe_allow_html=True,
     )
 

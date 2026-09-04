@@ -166,14 +166,14 @@ def render_workload_view():
 
         class_html += (
             f'</p>'
-            f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid {c["card_border"]}; padding-top: 12px;">'
-            f'<div style="background:{c["card_bg_elevated"]}; padding: 8px 12px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
+            f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; border-top: 1px solid {c["card_border"]}; padding-top: 14px;">'
+            f'<div style="background:{c["card_bg_elevated"]}; padding: 12px 14px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
             f'<span class="muted" style="font-size:10px; font-weight:700; text-transform:uppercase;">Observed Window</span>'
-            f'<div style="font-size: 14px; font-weight: 700; color: {c["text"]}; margin-top: 2px;">{format_duration(window_sec)}</div>'
+            f'<div style="font-size: 14px; font-weight: 700; color: {c["text"]}; margin-top: 4px;">{format_duration(window_sec)}</div>'
             f'</div>'
-            f'<div style="background:{c["card_bg_elevated"]}; padding: 8px 12px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
+            f'<div style="background:{c["card_bg_elevated"]}; padding: 12px 14px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
             f'<span class="muted" style="font-size:10px; font-weight:700; text-transform:uppercase;">Telemetry Timestamp</span>'
-            f'<div style="font-size: 13px; font-weight: 600; color: {c["text_subtle"]}; margin-top: 2px;">{format_timestamp(timestamp)}</div>'
+            f'<div style="font-size: 13px; font-weight: 600; color: {c["text_subtle"]}; margin-top: 4px;">{format_timestamp(timestamp)}</div>'
             f'</div>'
             f'</div>'
             f'</div>'
@@ -215,7 +215,7 @@ def render_workload_view():
     # CURRENT WINDOW ACCESS PATTERNS
     # --------------------------------------------------
     st.markdown(
-        f"""<div style="margin: 28px 0 10px 0;">
+        f"""<div style="margin: 32px 0 12px 0;">
             <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                 Observed Window Access Counts & Key Velocity
             </h3>

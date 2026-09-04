@@ -373,31 +373,31 @@ def render_cache_objects_view():
                 )
 
                 inspector_card_html = (
-                    f'<div class="decision-card" style="padding: 18px; margin-bottom: 16px; border-radius: 12px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
-                    f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">'
+                    f'<div class="decision-card" style="padding: 22px 24px; margin-bottom: 20px; border-radius: 12px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
+                    f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">'
                     f'<span style="font-size: 10.5px; font-weight: 800; color: {c["text_muted"]}; letter-spacing: 0.6px; text-transform: uppercase;">ENGINE VERDICT</span>'
                     f'<div style="display: flex; gap: 6px; align-items: center;">{d_badge} {s_badge}</div>'
                     f'</div>'
-                    f'<div style="margin-bottom: 10px;">'
-                    f'<span style="font-size: 10px; font-weight: 700; color: {c["text_subtle"]}; text-transform: uppercase; display: block; margin-bottom: 3px;">CACHE KEY IDENTIFIER</span>'
-                    f'<code style="font-size: 12px; color: {c["text"]}; font-weight: 700; word-break: break-all; background: {c["card_bg_elevated"]}; padding: 5px 8px; border-radius: 6px; border: 1px solid {c["card_border"]}; display: block; font-family: monospace;">{item["key"]}</code>'
+                    f'<div style="margin-bottom: 12px;">'
+                    f'<span style="font-size: 10px; font-weight: 700; color: {c["text_subtle"]}; text-transform: uppercase; display: block; margin-bottom: 4px;">CACHE KEY IDENTIFIER</span>'
+                    f'<code style="font-size: 12px; color: {c["text"]}; font-weight: 700; word-break: break-all; background: {c["card_bg_elevated"]}; padding: 6px 10px; border-radius: 6px; border: 1px solid {c["card_border"]}; display: block; font-family: monospace;">{item["key"]}</code>'
                     f'</div>'
-                    f'<div style="margin: 10px 0; padding: 10px 12px; background: {c["card_bg_elevated"]}; border-radius: 8px; border: 1px solid {c["card_border"]};">'
+                    f'<div style="margin: 12px 0; padding: 12px 14px; background: {c["card_bg_elevated"]}; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                     f'<span style="font-size: 10px; font-weight: 800; color: {c["text_muted"]}; letter-spacing: 0.5px; text-transform: uppercase;">ARBITER RATIONALE</span>'
-                    f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 3px; line-height: 1.45;">{rationale_text}</div>'
+                    f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px; line-height: 1.5;">{rationale_text}</div>'
                     f'</div>'
-                    f'<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; text-align: center;">'
-                    f'<div style="background: {c["card_bg_elevated"]}; padding: 8px 6px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
+                    f'<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px; text-align: center;">'
+                    f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                     f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Score</span>'
-                    f'<div style="font-size: 14px; font-weight: 800; color: {c["emerald"]};">{float(item["utility_score"]):.2f}</div>'
+                    f'<div style="font-size: 15px; font-weight: 800; color: {c["emerald"]};">{float(item["utility_score"]):.2f}</div>'
                     f'</div>'
-                    f'<div style="background: {c["card_bg_elevated"]}; padding: 8px 6px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
+                    f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                     f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Cost</span>'
-                    f'<div style="font-size: 14px; font-weight: 800; color: {c["amber"]};">${float(item["cost_usd"]):.3f}</div>'
+                    f'<div style="font-size: 15px; font-weight: 800; color: {c["amber"]};">${float(item["cost_usd"]):.3f}</div>'
                     f'</div>'
-                    f'<div style="background: {c["card_bg_elevated"]}; padding: 8px 6px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
+                    f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                     f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Velocity</span>'
-                    f'<div style="font-size: 14px; font-weight: 800; color: {c["text"]};">{item["hits_last_min"]} <span style="font-size: 9px; font-weight: 500;">req/m</span></div>'
+                    f'<div style="font-size: 15px; font-weight: 800; color: {c["text"]};">{item["hits_last_min"]} <span style="font-size: 9.5px; font-weight: 500;">req/m</span></div>'
                     f'</div>'
                     f'</div>'
                     f'</div>'
@@ -406,7 +406,7 @@ def render_cache_objects_view():
 
                 # Diagnostic Interactive Action Buttons
                 st.markdown(
-                    f'<div style="margin-top: 12px; margin-bottom: 8px;"><span style="font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: {c["text_muted"]};">EXECUTE OPERATOR ACTION:</span></div>',
+                    f'<div style="margin-top: 16px; margin-bottom: 10px;"><span style="font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: {c["text_muted"]};">EXECUTE OPERATOR ACTION:</span></div>',
                     unsafe_allow_html=True,
                 )
                 act1, act2, act3 = st.columns(3)

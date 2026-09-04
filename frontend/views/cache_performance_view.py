@@ -111,10 +111,10 @@ def render_cache_performance_view():
     # --------------------------------------------------
     shield_pct = (prevented_calls / total_reqs * 100.0) if total_reqs > 0 else 0.0
     impact_html = (
-        f'<div class="hero-card" style="padding: 14px 18px; margin-top: 28px; margin-bottom: 24px; border: 1px solid {c["card_border"]}; border-left: 3px solid {c["emerald"]} !important; display: flex; justify-content: space-between; align-items: center;">'
+        f'<div class="hero-card" style="padding: 18px 22px; margin-top: 32px; margin-bottom: 24px; border: 1px solid {c["card_border"]}; border-left: 4px solid {c["emerald"]} !important; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">'
         f'<div style="display: flex; align-items: center; gap: 10px;">'
         f'<span style="font-size: 16px;">⚡</span>'
-        f'<span style="font-size: 13px; font-weight: 700; color: {c["text"]};">'
+        f'<span style="font-size: 13.5px; font-weight: 700; color: {c["text"]};">'
         f'System Performance Impact: Cache currently absorbing <b>{shield_pct:.1f}%</b> of request traffic.'
         f'</span>'
         f'</div>'
@@ -130,7 +130,7 @@ def render_cache_performance_view():
 
     with c_chart1:
         st.markdown(
-            f'<div style="margin-bottom: 10px;">'
+            f'<div style="margin-bottom: 12px;">'
             f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">'
             f'Traffic Composition'
             f'</h3>'

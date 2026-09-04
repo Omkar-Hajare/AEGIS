@@ -378,7 +378,7 @@ def apply_global_styles():
             margin: 0 !important;
         }}
 
-        /* Single Consistent Full-Width Control-Center Container (1440px wide, centered) */
+        /* Single Consistent Full-Width Control-Center Container (1480px wide, centered, 40px breathing room) */
         .stMainBlockContainer,
         .block-container,
         [data-testid="stMainBlockContainer"],
@@ -386,18 +386,48 @@ def apply_global_styles():
             position: relative !important;
             z-index: 1 !important;
             width: 100% !important;
-            max-width: 1440px !important;
+            max-width: 1480px !important;
             margin-left: auto !important;
             margin-right: auto !important;
-            padding-top: 8px !important;
-            padding-bottom: 32px !important;
-            padding-left: 20px !important;
-            padding-right: 20px !important;
+            padding-top: 10px !important;
+            padding-bottom: 36px !important;
+            padding-left: 40px !important;
+            padding-right: 40px !important;
         }}
 
-        /* Consistent Column Row Gap (16px) */
+        @media (max-width: 1024px) {{
+            .stMainBlockContainer,
+            .block-container,
+            [data-testid="stMainBlockContainer"],
+            div[data-testid="stAppViewBlockContainer"] {{
+                padding-left: 24px !important;
+                padding-right: 24px !important;
+            }}
+        }}
+
+        @media (max-width: 768px) {{
+            .stMainBlockContainer,
+            .block-container,
+            [data-testid="stMainBlockContainer"],
+            div[data-testid="stAppViewBlockContainer"] {{
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+            }}
+        }}
+
+        /* Consistent Column Row Gap (18px) and Column Equal Stretch */
         div[data-testid="stHorizontalBlock"] {{
-            gap: 16px !important;
+            gap: 18px !important;
+            margin-bottom: 18px !important;
+        }}
+        div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
+            display: flex !important;
+            flex-direction: column !important;
+        }}
+        div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div {{
+            flex: 1 1 auto !important;
+            display: flex !important;
+            flex-direction: column !important;
         }}
 
         /* Seamless Top Navbar: Edge-to-edge container alignment with crisp border-bottom */
@@ -416,7 +446,7 @@ def apply_global_styles():
             padding-left: 0px !important;
             padding-right: 0px !important;
             margin-top: 0 !important;
-            margin-bottom: 12px !important;
+            margin-bottom: 16px !important;
             box-shadow: none !important;
             align-items: center !important;
             width: 100% !important;
@@ -671,15 +701,17 @@ def apply_global_styles():
         }}
 
         /* Modern Elevated Cards (Glassmorphism + GPU-Friendly Transitions) */
+        /* Modern Elevated Cards (Glassmorphism + GPU-Friendly Transitions) */
         .hero-card, .status-card, .decision-card {{
             background: {c["card_bg"]} !important;
             border: 1px solid {c["card_border"]} !important;
             backdrop-filter: blur(14px) !important;
             -webkit-backdrop-filter: blur(14px) !important;
-            border-radius: 12px;
-            padding: 18px 20px;
+            border-radius: 12px !important;
+            padding: 22px 24px !important;
+            margin-bottom: 20px !important;
             box-shadow: {card_shadow} !important;
-            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
         }}
 
         .metric-card {{
@@ -688,13 +720,15 @@ def apply_global_styles():
             backdrop-filter: blur(14px) !important;
             -webkit-backdrop-filter: blur(14px) !important;
             border-radius: 12px !important;
-            padding: 16px 18px !important;
-            min-height: 130px !important;
+            padding: 20px 22px !important;
+            min-height: 148px !important;
             height: 100% !important;
+            box-sizing: border-box !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
             box-shadow: {card_shadow} !important;
+            margin-bottom: 0 !important;
             transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
         }}
 
@@ -705,6 +739,76 @@ def apply_global_styles():
             box-shadow: {card_shadow_hover} !important;
         }}
 
+        /* Streamlit Plotly Chart Glassmorphic Wrapper */
+        div[data-testid="stPlotlyChart"] {{
+            background: {c["card_bg"]} !important;
+            border: 1px solid {c["card_border"]} !important;
+            backdrop-filter: blur(14px) !important;
+            -webkit-backdrop-filter: blur(14px) !important;
+            border-radius: 12px !important;
+            padding: 18px 20px 10px 20px !important;
+            box-shadow: {card_shadow} !important;
+            margin-bottom: 20px !important;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease !important;
+        }}
+        div[data-testid="stPlotlyChart"]:hover {{
+            border-color: {card_border_hover} !important;
+        }}
+
+        /* Streamlit Native Alert / Info Box High Contrast Glass */
+        div[data-testid="stAlert"] {{
+            background: {"rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"} !important;
+            border: 1px solid {c["card_border"]} !important;
+            border-radius: 10px !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            padding: 14px 18px !important;
+            margin-bottom: 18px !important;
+        }}
+        div[data-testid="stAlert"] p,
+        div[data-testid="stAlert"] span,
+        div[data-testid="stAlert"] div {{
+            color: {c["text"]} !important;
+            font-size: 13px !important;
+            line-height: 1.5 !important;
+        }}
+        div[data-testid="stAlert"] a {{
+            color: {c["purple"]} !important;
+            font-weight: 600 !important;
+        }}
+
+        /* Streamlit Native Expander Glass */
+        [data-testid="stExpander"] {{
+            background: {c["card_bg"]} !important;
+            border: 1px solid {c["card_border"]} !important;
+            border-radius: 10px !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            margin-bottom: 18px !important;
+        }}
+        [data-testid="stExpander"] summary {{
+            padding: 12px 16px !important;
+        }}
+        [data-testid="stExpander"] summary p,
+        [data-testid="stExpander"] summary span {{
+            color: {c["text"]} !important;
+            font-weight: 600 !important;
+            font-size: 13.5px !important;
+        }}
+        [data-testid="stExpander"] div[data-testid="stExpanderDetails"] {{
+            padding: 14px 18px 18px 18px !important;
+            border-top: 1px solid {c["card_border"]} !important;
+        }}
+
+        @media (max-width: 768px) {{
+            .hero-card, .status-card, .decision-card, .metric-card {{
+                padding: 16px 18px !important;
+            }}
+            div[data-testid="stPlotlyChart"] {{
+                padding: 12px 14px 8px 14px !important;
+            }}
+        }}
+
         /* Streamlit Native Metric cards */
         [data-testid="stMetric"] {{
             background: {c["card_bg"]} !important;
@@ -712,7 +816,8 @@ def apply_global_styles():
             backdrop-filter: blur(14px) !important;
             -webkit-backdrop-filter: blur(14px) !important;
             border-radius: 12px !important;
-            padding: 16px 18px !important;
+            padding: 20px 22px !important;
+            min-height: 148px !important;
             box-shadow: {card_shadow} !important;
         }}
 
@@ -798,9 +903,17 @@ def apply_global_styles():
         /* Dataframe table styling */
         [data-testid="stDataFrame"] {{
             border: 1px solid {c["card_border"]} !important;
-            border-radius: 10px !important;
-            overflow: hidden;
+            border-radius: 12px !important;
+            overflow: hidden !important;
             background-color: {c["card_bg"]} !important;
+            backdrop-filter: blur(14px) !important;
+            -webkit-backdrop-filter: blur(14px) !important;
+            box-shadow: {card_shadow} !important;
+            margin-bottom: 20px !important;
+        }}
+        [data-testid="stDataFrame"] div,
+        [data-testid="stDataFrame"] span {{
+            color: {c["text"]} !important;
         }}
 
         /* Clean Technical Glass Badges */

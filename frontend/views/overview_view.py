@@ -255,26 +255,26 @@ def render_overview_view():
             f'<span class="muted" style="font-size:11px;font-weight:700;text-transform:uppercase;">WORKLOAD CLASSIFIER (GET /telemetry/workload)</span>'
             f'<span class="badge-pill {workload_badge_cls}">{workload_badge}</span>'
             f'</div>'
-            f'<div style="font-size:17px;font-weight:800;color:{c["text"]};margin-bottom:12px;">{workload_display}</div>'
-            f'<div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">'
-            f'<div style="background:{c["card_bg_elevated"]};padding:8px 12px;border-radius:6px;border:1px solid {c["card_border"]};">'
+            f'<div style="font-size:17px;font-weight:800;color:{c["text"]};margin-bottom:14px;">{workload_display}</div>'
+            f'<div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">'
+            f'<div style="background:{c["card_bg_elevated"]};padding:12px 14px;border-radius:8px;border:1px solid {c["card_border"]};">'
             f'<span class="muted" style="font-size:10px;font-weight:700;text-transform:uppercase;">Observed Window</span>'
-            f'<div style="font-size:14px;font-weight:700;color:{c["text"]};margin-top:2px;">{window_str}</div>'
+            f'<div style="font-size:14px;font-weight:700;color:{c["text"]};margin-top:4px;">{window_str}</div>'
             f'</div>'
-            f'<div style="background:{c["card_bg_elevated"]};padding:8px 12px;border-radius:6px;border:1px solid {c["card_border"]};">'
+            f'<div style="background:{c["card_bg_elevated"]};padding:12px 14px;border-radius:8px;border:1px solid {c["card_border"]};">'
             f'<span class="muted" style="font-size:10px;font-weight:700;text-transform:uppercase;">Cache Evictions</span>'
-            f'<div style="font-size:14px;font-weight:700;color:{c["rose"]};margin-top:2px;">{format_int(evictions)}</div>'
+            f'<div style="font-size:14px;font-weight:700;color:{c["rose"]};margin-top:4px;">{format_int(evictions)}</div>'
             f'</div>'
-            f'<div style="background:{c["card_bg_elevated"]};padding:8px 12px;border-radius:6px;border:1px solid {c["card_border"]};">'
+            f'<div style="background:{c["card_bg_elevated"]};padding:12px 14px;border-radius:8px;border:1px solid {c["card_border"]};">'
             f'<span class="muted" style="font-size:10px;font-weight:700;text-transform:uppercase;">Allocated Capacity</span>'
-            f'<div style="font-size:13px;font-weight:700;color:{c["amber"] if cap_bytes is None else c["text"]};margin-top:2px;">{cap_display}</div>'
+            f'<div style="font-size:13px;font-weight:700;color:{c["amber"] if cap_bytes is None else c["text"]};margin-top:4px;">{cap_display}</div>'
             f'</div>'
-            f'<div style="background:{c["card_bg_elevated"]};padding:8px 12px;border-radius:6px;border:1px solid {c["card_border"]};">'
+            f'<div style="background:{c["card_bg_elevated"]};padding:12px 14px;border-radius:8px;border:1px solid {c["card_border"]};">'
             f'<span class="muted" style="font-size:10px;font-weight:700;text-transform:uppercase;">Backend Calls Prevented</span>'
-            f'<div style="font-size:14px;font-weight:700;color:#22C55E;margin-top:2px;">{format_int(hits_cnt)}</div>'
+            f'<div style="font-size:14px;font-weight:700;color:#22C55E;margin-top:4px;">{format_int(hits_cnt)}</div>'
             f'</div>'
             f'</div>'
-            f'<div style="font-size:11.5px;color:{c["text_muted"]};line-height:1.4;border-top:1px solid {c["card_border"]};padding-top:10px;">'
+            f'<div style="font-size:11.5px;color:{c["text_muted"]};line-height:1.45;border-top:1px solid {c["card_border"]};padding-top:12px;">'
             f'<strong>Practical Impact:</strong> Caching eliminated <strong>{format_int(hits_cnt)}</strong> expensive backend recomputations. '
             f'Each cache hit avoids ~{format_latency(latency_ms)} of downstream latency.'
             f'</div>'
@@ -288,7 +288,7 @@ def render_overview_view():
     access_counts = obs.get("current_window_access_counts", {})
     if access_counts:
         st.markdown(
-            f"""<div style="margin: 28px 0 10px 0; display:flex; justify-content:space-between; align-items:center;">
+            f"""<div style="margin: 32px 0 12px 0; display:flex; justify-content:space-between; align-items:center;">
                 <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                     Active Access Keys in Current Observation Window
                 </h3>
@@ -301,10 +301,10 @@ def render_overview_view():
             with key_cols[i % len(key_cols)]:
                 st.markdown(
                     f"""
-                    <div class="hero-card" style="padding: 10px 14px;">
+                    <div class="hero-card" style="padding: 14px 16px; border-radius: 10px; margin-bottom: 0;">
                         <div style="font-size: 10px; font-weight: 700; color: {c['text_muted']}; text-transform: uppercase;">KEY</div>
-                        <code style="font-size: 12.5px; color: {c['text']} !important; background: {'rgba(255,255,255,0.06)' if c['is_dark'] else 'rgba(0,0,0,0.04)'} !important; border: 1px solid {c['card_border']} !important; padding: 2px 6px; border-radius: 4px; font-family: monospace;">{k}</code>
-                        <div style="margin-top: 6px; font-size: 12px; font-weight: 800; color: {c['text']};">
+                        <code style="font-size: 12.5px; color: {c['text']} !important; background: {'rgba(255,255,255,0.06)' if c['is_dark'] else 'rgba(0,0,0,0.04)'} !important; border: 1px solid {c['card_border']} !important; padding: 3px 8px; border-radius: 4px; font-family: monospace; display: block; margin: 4px 0 6px 0; overflow: hidden; text-overflow: ellipsis;">{k}</code>
+                        <div style="font-size: 13px; font-weight: 800; color: {c['text']};">
                             {format_int(cnt)} accesses
                         </div>
                     </div>
@@ -316,7 +316,7 @@ def render_overview_view():
     # ADAPTIVE ENGINE CONCEPT & DECISION PIPELINE
     # --------------------------------------------------
     st.markdown(
-        f"""<div style="display: flex; justify-content: space-between; align-items: center; margin: 28px 0 6px 0;">
+        f"""<div style="display: flex; justify-content: space-between; align-items: center; margin: 32px 0 6px 0;">
             <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                 Adaptive Cache Engine Architecture & Arbitration Pipeline
             </h3>
@@ -329,7 +329,7 @@ def render_overview_view():
     )
 
     pipe_grid = (
-        f'<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 22px;">'
+        f'<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px;">'
         f'<div class="pipeline-node">'
         f'<div style="font-size: 10px; font-weight: 800; color: {c["text_muted"]}; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">STAGE 1</div>'
         f'<div style="font-size: 13.5px; font-weight: 800; color: {c["text"]}; margin-bottom: 4px;">Telemetry Ingestion</div>'
