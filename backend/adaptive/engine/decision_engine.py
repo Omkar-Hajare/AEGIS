@@ -15,6 +15,7 @@ import hashlib
 import math
 from collections.abc import Mapping
 from datetime import datetime
+from typing import Any
 
 from backend.adaptive.capacity import CapacityController
 from backend.adaptive.eviction import EvictionPolicy
@@ -46,6 +47,7 @@ class DecisionEngine:
         refresh_policy: RefreshPolicy | None = None,
         capacity_controller: CapacityController | None = None,
         eviction_policy: EvictionPolicy | None = None,
+        capacity_mode: str = "rule_based",
     ) -> None:
         """Initialize DecisionEngine with optional injected components."""
         self.feature_extractor = feature_extractor or FeatureExtractor()
@@ -54,6 +56,7 @@ class DecisionEngine:
         self.refresh_policy = refresh_policy or RefreshPolicy()
         self.capacity_controller = capacity_controller or CapacityController()
         self.eviction_policy = eviction_policy or EvictionPolicy()
+        self.capacity_mode = capacity_mode
 
     def decide(
         self,
@@ -66,30 +69,29 @@ class DecisionEngine:
         previous_access_counts: Mapping[str, int] | None = None,
         refresh_after_seconds: float = 300.0,
         decision_id: str | None = None,
+        capacity_mode: str | None = None,
     ) -> Decision:
         """Evaluate telemetry and cache state to produce an adaptive Decision.
 
         Args:
             objects: Mapping of cache key to CacheObject metadata.
             workload: Current observed WorkloadState telemetry snapshot.
-            system: Current observed SystemState snapshot.
-            min_capacity_bytes: Minimum permissible logical cache capacity (> 0).
-            max_capacity_bytes: Maximum permissible logical cache capacity (> 0).
-            now: Optional reference evaluation datetime (must be timezone-aware).
-                 Defaults to system.timestamp.
-            previous_access_counts: Optional mapping of previous-window access counts.
+            system: Current observed SystemState capacity and usage snapshot.
+            min_capacity_bytes: Hard lower limit on recommended capacity.
+            max_capacity_bytes: Hard upper limit on recommended capacity.
+            now: Evaluation timestamp. If None, system.timestamp is used.
+            previous_access_counts: Optional access counts from prior window.
             refresh_after_seconds: Base staleness threshold in seconds (> 0).
-            decision_id: Optional explicit unique identifier for the decision.
+            decision_id: Optional custom identifier for this decision event.
+            capacity_mode: Optional capacity recommendation mode ('continuous' or 'rule_based').
 
         Returns:
-            Frozen v1 Decision object detailing capacity, scoring, evictions,
+            Decision instance specifying scores, evictions, capacity action,
             and refresh recommendations.
 
         Raises:
-            ValueError: If inputs, capacity bounds, or timestamps are invalid.
-            TypeError: If input mapping or object types are invalid.
+            DecisionEngineValidationError: If inputs violate validation rules.
         """
-        # 1. Validate inputs
         self._validate_inputs(
             objects=objects,
             workload=workload,
@@ -99,13 +101,11 @@ class DecisionEngine:
             now=now,
             refresh_after_seconds=refresh_after_seconds,
         )
-
-        # 2. Determine evaluation timestamp
         eval_time = now if now is not None else system.timestamp
 
-        # 3. Feature extraction
+        # 1. Feature extraction
         prev_counts = (
-            dict(previous_access_counts) if previous_access_counts is not None else None
+            dict(previous_access_counts) if previous_access_counts is not None else {}
         )
         features = self.feature_extractor.extract(
             objects=list(objects.values()),
@@ -114,33 +114,47 @@ class DecisionEngine:
             previous_access_counts=prev_counts,
         )
 
-        # 4. Workload classification
+        # 2. Workload analysis & classification
         detected_workload_type = self.workload_analyzer.analyze(workload)
 
-        # 5. Adaptive retention scoring
+        # 3. Adaptive retention scoring
         scores = self.scorer.score(
             features=features,
             workload_type=detected_workload_type,
+            workload=workload,
+            system=system,
+            previous_access_counts=prev_counts,
         )
 
         # 6. Staleness / refresh evaluation
         refresh_keys: list[str] = []
+        refresh_urgencies: dict[str, float] = {}
         for key in sorted(objects.keys()):
             obj = objects[key]
-            if self.refresh_policy.should_refresh(
+            obj_features = features.get(key) if features else None
+            prev_cnt = prev_counts.get(key) if prev_counts else None
+            urgency = self.refresh_policy.compute_urgency(
                 object=obj,
                 now=eval_time,
                 workload_type=detected_workload_type,
                 refresh_after_seconds=refresh_after_seconds,
-            ):
+                workload=workload,
+                system=system,
+                features=obj_features,
+                previous_access_count=prev_cnt,
+            )
+            refresh_urgencies[key] = round(urgency, 4)
+            if urgency >= 0.50:
                 refresh_keys.append(key)
 
         # 7. Capacity recommendation
+        eff_capacity_mode = capacity_mode or self.capacity_mode
         capacity_decision = self.capacity_controller.recommend(
             workload=workload,
             system=system,
             min_capacity_bytes=min_capacity_bytes,
             max_capacity_bytes=max_capacity_bytes,
+            mode=eff_capacity_mode,
         )
         recommended_capacity = capacity_decision.recommended_capacity_bytes
         capacity_action = capacity_decision.capacity_action
@@ -152,19 +166,34 @@ class DecisionEngine:
                 scores=scores,
                 objects=dict(objects),
                 target_capacity_bytes=recommended_capacity,
+                workload=workload,
+                system=system,
             )
         else:
             eviction_keys = []
+            if hasattr(self.eviction_policy, "last_value_densities"):
+                self.eviction_policy.last_value_densities = None
+            if hasattr(self.eviction_policy, "last_retention_values"):
+                self.eviction_policy.last_retention_values = None
 
         # 9. Structured metadata
-        metadata = {
+        metadata: dict[str, Any] = {
             "workload_type": detected_workload_type.value,
             "refresh_keys": refresh_keys,
             "refreshed_count": len(refresh_keys),
+            "refresh_urgencies": refresh_urgencies,
             "object_count": len(objects),
             "current_usage_bytes": current_usage,
             "target_capacity_bytes": recommended_capacity,
             "capacity_action": capacity_action.value,
+            "capacity_pressure": capacity_decision.metadata.get("capacity_pressure")
+            if capacity_decision.metadata
+            else round(self.capacity_controller.compute_pressure(workload, system), 4),
+            "capacity_mode": capacity_decision.metadata.get(
+                "capacity_mode", eff_capacity_mode
+            )
+            if capacity_decision.metadata
+            else eff_capacity_mode,
             "reason_components": {
                 "workload_type": detected_workload_type.value,
                 "capacity_action": capacity_action.value,
@@ -174,6 +203,29 @@ class DecisionEngine:
                 "target_capacity_bytes": recommended_capacity,
             },
         }
+
+        # Expose dynamic weights and pressures for audit and explainability
+        if (
+            hasattr(self.scorer, "last_weights")
+            and self.scorer.last_weights is not None
+        ):
+            metadata["dynamic_weights"] = (
+                self.scorer.last_weights.as_dict()
+                if hasattr(self.scorer.last_weights, "as_dict")
+                else dict(self.scorer.last_weights)
+            )
+        if (
+            hasattr(self.scorer, "last_pressures")
+            and self.scorer.last_pressures is not None
+        ):
+            metadata["dynamic_pressures"] = dict(self.scorer.last_pressures)
+        if (
+            hasattr(self.eviction_policy, "last_value_densities")
+            and self.eviction_policy.last_value_densities is not None
+        ):
+            metadata["eviction_value_density"] = dict(
+                self.eviction_policy.last_value_densities
+            )
 
         # 10. Reason formulation
         eviction_desc = (

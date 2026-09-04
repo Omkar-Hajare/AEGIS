@@ -28,6 +28,7 @@ from benchmark.results import (
     format_summary_table,
     serialize_suite_result,
 )
+from benchmark.rolling_telemetry import RollingTelemetry
 from benchmark.runner import BenchmarkRunner
 
 __all__ = [
@@ -44,6 +45,7 @@ __all__ = [
     "GDSPolicyAdapter",
     "LFUPolicyAdapter",
     "LRUPolicyAdapter",
+    "RollingTelemetry",
     "calculate_percentile",
     "compute_benchmark_metrics",
     "deserialize_suite_result",

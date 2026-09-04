@@ -64,7 +64,22 @@ class BenchmarkRunner:
         """
         self._validate_events(events)
 
-        policy_adapter = get_policy_adapter(policy)
+        # Compute an adaptive window that fits the actual event time span so that
+        # the measurement window rolls at least once mid-scenario and
+        # _previous_window_accesses accumulates popularity history.
+        # With the default 60 s window, 100 events at 100 req/s span ~1 s,
+        # so the window never rolls and previous_access_counts stays empty.
+        adaptive_window_seconds: float = 1.0
+        if len(events) >= 2:
+            span = (events[-1].timestamp - events[0].timestamp).total_seconds()
+            if span > 0.0:
+                # Set window to half the span: guarantees at least one roll.
+                adaptive_window_seconds = max(0.1, span / 2.0)
+
+        policy_adapter = get_policy_adapter(
+            policy,
+            window_seconds=adaptive_window_seconds,
+        )
         simulator = CacheSimulator(
             capacity_bytes=self.config.cache_capacity_bytes,
             policy=policy_adapter,
