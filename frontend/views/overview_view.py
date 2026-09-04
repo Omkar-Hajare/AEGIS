@@ -49,7 +49,7 @@ def render_overview_view():
     # --------------------------------------------------
     st.markdown(
         f"""
-        <div style="margin-bottom: 18px;">
+        <div style="margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                 <span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 4px; padding: 2px 8px;">
                     VH26 SATYAGRAH &bull; OBSERVABILITY CONTROL PLANE
@@ -62,7 +62,7 @@ def render_overview_view():
             <h1 style="font-size: 2.2rem; font-weight: 800; margin: 0 0 6px 0; letter-spacing: -0.6px; color: {c['text']} !important;">
                 Adaptive Cache <span style="color: {c['cyan']} !important;">Control Center</span>
             </h1>
-            <p style="font-size: 14px; color: {c["text_muted"]}; margin: 0 0 14px 0; max-width: 950px; line-height: 1.5;">
+            <p style="font-size: 14px; color: {c["text_muted"]}; margin: 0; max-width: 950px; line-height: 1.5;">
                 A context-aware, cost-driven caching engine moving beyond static LRU/LFU heuristics. 
                 Observes workload signals, dynamically optimizes hit ratios, minimizes backend recomputations, and measures impact in real time.
             </p>
@@ -189,8 +189,6 @@ def render_overview_view():
             progress_color=c["cyan"],
         )
 
-    st.write("")
-
     # --------------------------------------------------
     # CACHE EFFICIENCY & TELEMETRY BREAKDOWN
     # --------------------------------------------------
@@ -198,7 +196,7 @@ def render_overview_view():
 
     with col_chart:
         st.markdown(
-            f"""<div style="margin-bottom: 8px;">
+            f"""<div style="margin-top: 28px; margin-bottom: 10px;">
                 <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                     Current Window HIT vs MISS Distribution
                 </h3>
@@ -234,7 +232,7 @@ def render_overview_view():
 
     with col_state:
         st.markdown(
-            f"""<div style="margin-bottom: 8px;">
+            f"""<div style="margin-top: 28px; margin-bottom: 10px;">
                 <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                     Workload & System State
                 </h3>
@@ -290,7 +288,7 @@ def render_overview_view():
     access_counts = obs.get("current_window_access_counts", {})
     if access_counts:
         st.markdown(
-            f"""<div style="margin: 18px 0 8px 0; display:flex; justify-content:space-between; align-items:center;">
+            f"""<div style="margin: 28px 0 10px 0; display:flex; justify-content:space-between; align-items:center;">
                 <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                     Active Access Keys in Current Observation Window
                 </h3>
@@ -318,7 +316,7 @@ def render_overview_view():
     # ADAPTIVE ENGINE CONCEPT & DECISION PIPELINE
     # --------------------------------------------------
     st.markdown(
-        f"""<div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0 6px 0;">
+        f"""<div style="display: flex; justify-content: space-between; align-items: center; margin: 28px 0 6px 0;">
             <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                 Adaptive Cache Engine Architecture & Arbitration Pipeline
             </h3>

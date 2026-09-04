@@ -31,7 +31,7 @@ def render_workload_view():
 
     # Header Title Block
     header_html = (
-        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 18px 0; flex-wrap: wrap; gap: 12px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">'
         f'<span style="font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 4px; padding: 2px 8px;">'
@@ -124,8 +124,6 @@ def render_workload_view():
             is_floating=True,
         )
 
-    st.write("")
-
     # --------------------------------------------------
     # WORKLOAD CLASSIFICATION CARD (HONEST NULL HANDLING)
     # --------------------------------------------------
@@ -213,13 +211,11 @@ def render_workload_view():
         )
         st.markdown(metrics_html, unsafe_allow_html=True)
 
-    st.write("")
-
     # --------------------------------------------------
     # CURRENT WINDOW ACCESS PATTERNS
     # --------------------------------------------------
     st.markdown(
-        f"""<div style="margin: 10px 0 12px 0;">
+        f"""<div style="margin: 28px 0 10px 0;">
             <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                 Observed Window Access Counts & Key Velocity
             </h3>

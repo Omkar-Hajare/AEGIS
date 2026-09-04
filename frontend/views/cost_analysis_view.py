@@ -31,7 +31,7 @@ def render_cost_analysis_view():
 
     # Header Title Block with cleanly aligned right badge
     header_html = (
-        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 22px 0; flex-wrap: wrap; gap: 12px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
         f'Cost Analysis & <span style="color: {c["cyan"]} !important;">Economic Value Density</span>'
@@ -116,8 +116,6 @@ def render_cost_analysis_view():
             tooltip="Theoretical metric calculated by Person 1's adaptive engine to prioritize high-cost objects.",
         )
 
-    st.write("")
-
     # --------------------------------------------------
     # ECONOMIC VALUE FORMULATION & COMPONENT ARCHITECTURE
     # --------------------------------------------------
@@ -125,9 +123,11 @@ def render_cost_analysis_view():
 
     with col_formula:
         st.markdown(
-            f'<h3 style="font-size: 1.15rem; font-weight: 700; color: {c["text"]}; margin-bottom: 12px;">'
+            f'<div style="margin-top: 28px; margin-bottom: 10px;">'
+            f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">'
             f'Economic Value Density Formulation'
-            f'</h3>',
+            f'</h3>'
+            f'</div>',
             unsafe_allow_html=True,
         )
         formula_html = (

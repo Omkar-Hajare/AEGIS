@@ -13,7 +13,7 @@ def render_benchmarks_view():
 
     # Header Title Block with cleanly aligned right badge
     header_html = (
-        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 22px 0; flex-wrap: wrap; gap: 12px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
         f'Policy Benchmarks & <span style="color: {c["cyan"]} !important;">Empirical Evaluation</span>'
@@ -124,13 +124,11 @@ def render_benchmarks_view():
             progress_color=c["purple"],
         )
 
-    st.write("")
-
     # --------------------------------------------------
     # 4-QUADRANT BENCHMARK COMPARISON CHARTS
     # --------------------------------------------------
     st.markdown(
-        f"""<div style="margin: 10px 0 8px 0;">
+        f"""<div style="margin: 28px 0 10px 0;">
             <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                 Heuristic Performance Comparison (4-Quadrant Benchmark)
             </h3>

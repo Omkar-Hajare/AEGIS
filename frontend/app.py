@@ -1,5 +1,15 @@
 import streamlit as st
 
+st.set_page_config(
+    page_title="Adaptive Cache Control Center - Satyagrah",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+import importlib
+import frontend.components.styles as styles
+importlib.reload(styles)
 from frontend.components.styles import apply_global_styles
 from frontend.components.navbar import render_top_navbar, NAV_OPTIONS
 from frontend.views.overview_view import render_overview_view
@@ -11,13 +21,6 @@ from frontend.views.cache_objects_view import render_cache_objects_view
 from frontend.views.adaptive_decisions_view import render_adaptive_decisions_view
 from frontend.views.cost_analysis_view import render_cost_analysis_view
 from frontend.views.benchmarks_view import render_benchmarks_view
-
-st.set_page_config(
-    page_title="Adaptive Cache Control Center - Satyagrah",
-    page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
 
 # Apply Cyber Obsidian Dark or Clean Off-White Light theme
 apply_global_styles()

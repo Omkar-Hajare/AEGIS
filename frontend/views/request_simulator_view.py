@@ -36,7 +36,7 @@ def render_request_simulator_view():
 
     # Header Title Block with cleanly aligned right badge
     header_html = (
-        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 22px 0; flex-wrap: wrap; gap: 12px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
         f'Request Simulator & <span style="color: {c["cyan"]} !important;">Cache Lifecycle Harness</span>'
@@ -98,13 +98,11 @@ def render_request_simulator_view():
             delta_color=c["purple"],
         )
 
-    st.write("")
-
     # --------------------------------------------------
     # JURY DEMO GUIDE CALLOUT
     # --------------------------------------------------
     guide_html = (
-        f'<div class="hero-card" style="padding: 14px 18px; margin-bottom: 22px; border-left: 4px solid #10B981 !important;">'
+        f'<div class="hero-card" style="padding: 14px 18px; margin-top: 28px; margin-bottom: 22px; border-left: 4px solid #10B981 !important;">'
         f'<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">'
         f'<div>'
         f'<span style="font-size: 11px; font-weight: 800; color: #10B981; letter-spacing: 0.6px; text-transform: uppercase;">JURY DEMO PROTOCOL (MISS &rarr; HIT):</span>'
@@ -227,7 +225,6 @@ def render_request_simulator_view():
                         st.rerun()
 
         # REPEAT SAME KEY SHORTCUT BUTTON
-        st.write("")
         curr_target = st.session_state.get("sim_last_key", "None")
         if curr_target and curr_target != "None":
             st.markdown(

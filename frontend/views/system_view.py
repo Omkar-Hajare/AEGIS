@@ -24,7 +24,7 @@ def render_system_view():
 
     # Header Title Block with cleanly aligned right badge
     header_html = (
-        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 22px 0; flex-wrap: wrap; gap: 12px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
         f'System State & <span style="color: {c["cyan"]} !important;">Runtime Topology</span>'
@@ -98,8 +98,6 @@ def render_system_view():
             tooltip="Number of objects evicted from cache in current window. Currently 0 because eviction is unconstrained.",
         )
 
-    st.write("")
-
     # --------------------------------------------------
     # RUNTIME ARCHITECTURE & BOUNDARY EXPLANATION
     # --------------------------------------------------
@@ -107,9 +105,11 @@ def render_system_view():
 
     with col_arch:
         st.markdown(
-            f'<h3 style="font-size: 1.15rem; font-weight: 700; color: {c["text"]}; margin-bottom: 12px;">'
-            f'Cache Subsystem Status'
-            f'</h3>',
+            f'<div style="margin-top: 28px; margin-bottom: 10px;">'
+            f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">'
+            f'Runtime Topology & Boundaries'
+            f'</h3>'
+            f'</div>',
             unsafe_allow_html=True,
         )
 

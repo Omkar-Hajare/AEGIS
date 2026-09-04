@@ -26,7 +26,7 @@ def render_cache_performance_view():
 
     # Header Title Block with cleanly aligned right badge
     header_html = (
-        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 22px 0; flex-wrap: wrap; gap: 12px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 12px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
         f'Cache Performance & <span style="color: {c["cyan"]} !important;">Hit/Miss Telemetry</span>'
@@ -106,52 +106,52 @@ def render_cache_performance_view():
             tooltip="Active observation window duration. Can be rotated via System > Reset Window.",
         )
 
-    st.write("")
-
     # --------------------------------------------------
     # PRACTICAL IMPACT BANNER
     # --------------------------------------------------
     shield_pct = (prevented_calls / total_reqs * 100.0) if total_reqs > 0 else 0.0
     impact_html = (
-        f'<div class="hero-card" style="padding: 14px 18px; margin-bottom: 20px; border-left: 4px solid {c["cyan"]} !important; display: flex; justify-content: space-between; align-items: center;">'
+        f'<div class="hero-card" style="padding: 14px 18px; margin-top: 28px; margin-bottom: 24px; border-left: 4px solid {c["cyan"]} !important; display: flex; justify-content: space-between; align-items: center;">'
         f'<div style="display: flex; align-items: center; gap: 10px;">'
         f'<span style="font-size: 16px;">⚡</span>'
         f'<span style="font-size: 13px; font-weight: 700; color: {c["text"]};">'
         f'System Performance Impact: Cache currently absorbing <b>{shield_pct:.1f}%</b> of request traffic.'
         f'</span>'
         f'</div>'
-        f'<div style="font-size: 12px; color: {c["text_muted"]};">'
-        f'{format_int(prevented_calls)} backend recomputations eliminated &bull; {format_latency(latency_ms)} p95 saved per hit'
-        f'</div>'
+        f'<span class="badge-pill badge-active">OFFLOAD ACTIVE</span>'
         f'</div>'
     )
     st.markdown(impact_html, unsafe_allow_html=True)
 
     # --------------------------------------------------
-    # VISUALIZATION CHARTS: DONUT + BACKEND COMPARISON
+    # HIT / MISS RATIO & BACKEND OFFLOAD CHARTS
     # --------------------------------------------------
-    c_chart1, c_chart2 = st.columns([1.1, 1.3])
+    c_chart1, c_chart2 = st.columns([1.1, 1.4])
 
     with c_chart1:
         st.markdown(
-            f'<h3 style="font-size: 1.15rem; font-weight: 700; color: {c["text"]}; margin-bottom: 12px;">'
-            f'Request Verdict Distribution'
-            f'</h3>',
+            f'<div style="margin-bottom: 10px;">'
+            f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">'
+            f'Traffic Composition'
+            f'</h3>'
+            f'</div>',
             unsafe_allow_html=True,
         )
         render_donut_chart(
             values=[hits, misses],
             labels=["Cache HIT", "Cache MISS"],
-            title="Cache Traffic Verdict Ratio",
+            title="Live HIT vs MISS",
             colors=[c["emerald"], c["rose"]],
             height=300,
         )
 
     with c_chart2:
         st.markdown(
-            f'<h3 style="font-size: 1.15rem; font-weight: 700; color: {c["text"]}; margin-bottom: 12px;">'
+            f'<div style="margin-bottom: 10px;">'
+            f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">'
             f'Backend Call Attenuation'
-            f'</h3>',
+            f'</h3>'
+            f'</div>',
             unsafe_allow_html=True,
         )
         render_comparison_bar_chart(
@@ -165,13 +165,11 @@ def render_cache_performance_view():
             height=300,
         )
 
-    st.write("")
-
     # --------------------------------------------------
     # ACTIVE KEY ACCESS FREQUENCY IN CURRENT WINDOW
     # --------------------------------------------------
     st.markdown(
-        f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: center; margin: 28px 0 10px 0;">'
         f'<h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c["text"]};">Key Access Velocity in Active Window</h3>'
         f'<span style="font-size: 11px; color: {c["text_muted"]};">From GET /telemetry/observation</span>'
         f'</div>',

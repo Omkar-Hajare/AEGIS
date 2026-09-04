@@ -68,7 +68,7 @@ def render_metric_card(
         )
 
     html = (
-        f'<div class="hero-card" style="padding:16px 18px;min-height:130px;display:flex;flex-direction:column;justify-content:space-between;">'
+        f'<div class="hero-card metric-card" style="padding:16px 18px;min-height:130px;height:100%;display:flex;flex-direction:column;justify-content:space-between;">'
         f'<div style="display:flex;justify-content:space-between;align-items:center;">'
         f'<div style="display:flex;align-items:center;">'
         f'<span style="color:{c["text_muted"]};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;">{title}</span>'

@@ -185,41 +185,76 @@ def apply_global_styles():
             background-size: 140% 140%, 140% 140%, 140% 140% !important;
             animation: ambientShift 35s ease-in-out infinite alternate !important;
             color: {c["text"]} !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }}
 
-        /* Clean Full-Width Container */
-        .main .block-container {{
-            padding-top: 0.6rem !important;
-            padding-bottom: 2.5rem !important;
-            max-width: 1540px !important;
-        }}
-
-        /* Completely Hide Streamlit Header, Sidebar & Collapse Trigger */
+        /* Completely Hide Streamlit Header, Top Decoration, Sidebar & Collapse Triggers */
         header[data-testid="stHeader"],
+        .stAppHeader,
         [data-testid="stHeader"],
         [data-testid="stSidebar"],
         [data-testid="collapsedControl"],
         [data-testid="stSidebarCollapseButton"],
+        [data-testid="stDecoration"],
+        div[data-testid="stToolbar"],
         button[kind="headerNoPadding"] {{
             display: none !important;
-            height: 0 !important;
-            min-height: 0 !important;
+            height: 0px !important;
+            min-height: 0px !important;
+            max-height: 0px !important;
+            padding: 0 !important;
+            margin: 0 !important;
             opacity: 0 !important;
             visibility: hidden !important;
+            pointer-events: none !important;
         }}
 
-        /* Floating Glassmorphic Top Navbar Container */
+        /* Section wrapper zeroing */
+        section[data-testid="stMain"],
+        .stMain {{
+            padding: 0 !important;
+            margin: 0 !important;
+        }}
+
+        /* Single Consistent Full-Width Control-Center Container (1440px wide, centered) */
+        .stMainBlockContainer,
+        .block-container,
+        [data-testid="stMainBlockContainer"],
+        div[data-testid="stAppViewBlockContainer"] {{
+            width: 100% !important;
+            max-width: 1440px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            padding-top: 8px !important;
+            padding-bottom: 32px !important;
+            padding-left: 20px !important;
+            padding-right: 20px !important;
+        }}
+
+        /* Consistent Column Row Gap (16px) */
+        div[data-testid="stHorizontalBlock"] {{
+            gap: 16px !important;
+        }}
+
+        /* Seamless Top Navbar: Edge-to-edge container alignment with crisp border-bottom */
         div[data-testid="stHorizontalBlock"]:has([data-testid="stButtonGroup"]),
         div[data-testid="stHorizontalBlock"]:has(button[data-variant="segmented_control"]) {{
-            background: {navbar_bg} !important;
-            border: 1px solid {navbar_border} !important;
-            border-radius: 14px !important;
-            padding: 8px 18px !important;
-            margin-bottom: 22px !important;
-            box-shadow: {card_shadow} !important;
-            backdrop-filter: blur(16px) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
+            background: transparent !important;
+            border-bottom: 1px solid {navbar_border} !important;
+            border-top: none !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-radius: 0px !important;
+            padding-top: 2px !important;
+            padding-bottom: 12px !important;
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+            margin-top: 0 !important;
+            margin-bottom: 10px !important;
+            box-shadow: none !important;
             align-items: center !important;
+            width: 100% !important;
         }}
 
         /* Top Navbar Segmented Control Customization */
@@ -475,7 +510,21 @@ def apply_global_styles():
             transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease;
         }}
 
-        .hero-card:hover, .status-card:hover, .decision-card:hover {{
+        .metric-card {{
+            background: {c["card_bg"]} !important;
+            border: 1px solid {c["card_border"]} !important;
+            border-radius: 12px !important;
+            padding: 16px 18px !important;
+            min-height: 130px !important;
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            box-shadow: {card_shadow} !important;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease !important;
+        }}
+
+        .hero-card:hover, .status-card:hover, .decision-card:hover, .metric-card:hover {{
             border-color: {c["card_border_glow"]} !important;
             transform: translateY(-2px);
             box-shadow: {card_shadow_hover};
@@ -627,7 +676,10 @@ def apply_global_styles():
 
     </style>
     """
-    st.markdown(css, unsafe_allow_html=True)
+    if hasattr(st, "html"):
+        st.html(css)
+    else:
+        st.markdown(css, unsafe_allow_html=True)
 
 
 def render_top_control_bar(active_page: str = "Overview"):
