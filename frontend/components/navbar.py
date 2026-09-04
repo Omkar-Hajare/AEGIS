@@ -5,12 +5,16 @@ from frontend.components.styles import (
     is_dark_mode,
 )
 
-# Clean, modern, concise navigation labels
+# Full 9-module engineering observability navigation options
 NAV_OPTIONS = [
     "Overview",
+    "Performance",
+    "Simulator",
+    "Workload",
+    "System",
     "Cache Objects",
     "Decisions",
-    "Workload",
+    "Cost Analysis",
     "Benchmarks",
 ]
 
@@ -21,30 +25,30 @@ def render_top_navbar(current_tab: str = "Overview") -> str:
     b_status = get_backend_status()
     is_live = b_status["is_live"]
     status_dot_color = "#10B981" if is_live else c["amber"]
-    status_label = "REDIS TIER-1" if is_live else "DEMO TRACE"
+    status_label = "API v0.1.0" if is_live else "DEMO TRACE"
 
     if "active_nav" not in st.session_state:
         st.session_state["active_nav"] = current_tab
 
     col_brand, col_nav, col_actions = st.columns(
-        [1.15, 2.85, 0.95], vertical_alignment="center"
+        [1.0, 3.8, 0.85], vertical_alignment="center"
     )
 
     with col_brand:
         st.markdown(
             f"""
-            <div style="display: flex; align-items: center; gap: 10px; padding: 2px 0;">
-                <div style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35);">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{c["cyan"]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 2px 0;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{c["cyan"]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                     </svg>
                 </div>
                 <div>
-                    <div style="display: flex; align-items: center; gap: 7px;">
-                        <span style="font-weight: 800; font-size: 15px; letter-spacing: -0.3px; color: {c["text"]};">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-weight: 800; font-size: 14.5px; letter-spacing: -0.3px; color: {c["text"]};">
                             AdaptiveCache
                         </span>
-                        <span style="font-size: 9.5px; font-weight: 700; color: {status_dot_color}; background: {'rgba(255,255,255,0.06)' if c['is_dark'] else 'rgba(0,0,0,0.04)'}; border: 1px solid {c["card_border"]}; padding: 1px 6px; border-radius: 4px; letter-spacing: 0.5px;">
+                        <span style="font-size: 9px; font-weight: 700; color: {status_dot_color}; background: {'rgba(255,255,255,0.06)' if c['is_dark'] else 'rgba(0,0,0,0.04)'}; border: 1px solid {c["card_border"]}; padding: 1px 5px; border-radius: 4px; letter-spacing: 0.4px;">
                             {status_label}
                         </span>
                     </div>
@@ -57,10 +61,13 @@ def render_top_navbar(current_tab: str = "Overview") -> str:
     with col_nav:
         # Default to session state
         active_val = st.session_state.get("active_nav", current_tab)
-        # Handle legacy labels mapping
+        # Handle legacy and alias labels mapping
         label_map = {
             "Executive Overview": "Overview",
+            "Cache Performance": "Performance",
+            "Request Simulator": "Simulator",
             "Adaptive Decisions": "Decisions",
+            "System State": "System",
             "Workload Simulator": "Workload",
             "Policy Benchmarks": "Benchmarks",
         }

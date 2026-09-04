@@ -3,9 +3,13 @@ import streamlit as st
 from frontend.components.styles import apply_global_styles
 from frontend.components.navbar import render_top_navbar, NAV_OPTIONS
 from frontend.views.overview_view import render_overview_view
+from frontend.views.cache_performance_view import render_cache_performance_view
+from frontend.views.request_simulator_view import render_request_simulator_view
+from frontend.views.workload_view import render_workload_view
+from frontend.views.system_view import render_system_view
 from frontend.views.cache_objects_view import render_cache_objects_view
 from frontend.views.adaptive_decisions_view import render_adaptive_decisions_view
-from frontend.views.workload_view import render_workload_view
+from frontend.views.cost_analysis_view import render_cost_analysis_view
 from frontend.views.benchmarks_view import render_benchmarks_view
 
 st.set_page_config(
@@ -28,16 +32,24 @@ active_tab = render_top_navbar(
 )
 
 # --------------------------------------------------
-# INSTANT ZERO-LAG IN-MEMORY VIEW ROUTER
+# INSTANT ZERO-LAG IN-MEMORY VIEW ROUTER (9 MODULES)
 # --------------------------------------------------
 if active_tab in ("Overview", "Executive Overview"):
     render_overview_view()
+elif active_tab in ("Performance", "Cache Performance"):
+    render_cache_performance_view()
+elif active_tab in ("Simulator", "Request Simulator"):
+    render_request_simulator_view()
+elif active_tab in ("Workload", "Workload Simulator"):
+    render_workload_view()
+elif active_tab in ("System", "System State"):
+    render_system_view()
 elif active_tab == "Cache Objects":
     render_cache_objects_view()
 elif active_tab in ("Decisions", "Adaptive Decisions"):
     render_adaptive_decisions_view()
-elif active_tab in ("Workload", "Workload Simulator"):
-    render_workload_view()
+elif active_tab == "Cost Analysis":
+    render_cost_analysis_view()
 elif active_tab in ("Benchmarks", "Policy Benchmarks"):
     render_benchmarks_view()
 else:

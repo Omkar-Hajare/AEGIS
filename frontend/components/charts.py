@@ -245,3 +245,59 @@ def render_scatter_bubble_chart(
     fig.update_layout(layout)
 
     st.plotly_chart(fig, width="stretch", config=PLOTLY_CONFIG)
+
+
+def render_donut_chart(
+    values: list,
+    labels: list,
+    title: str,
+    colors: list | None = None,
+    height: int = 280,
+):
+    """Render a clean, modern donut chart for ratios like HIT / MISS distribution."""
+    c = get_theme_colors()
+    chart_colors = colors or [c["emerald"], c["rose"]]
+
+    # Guard against all zeros
+    total = sum(values) if values else 0
+    if total == 0:
+        values = [1]
+        labels = ["No traffic yet"]
+        chart_colors = [c["card_border"]]
+
+    fig = go.Figure(
+        data=[
+            go.Pie(
+                labels=labels,
+                values=values,
+                hole=0.68,
+                marker=dict(
+                    colors=chart_colors,
+                    line=dict(
+                        color="#060913" if c["is_dark"] else "#FFFFFF",
+                        width=2,
+                    ),
+                ),
+                textinfo="percent+label" if total > 0 else "label",
+                textposition="inside" if total > 0 else "none",
+                insidetextfont=dict(
+                    size=11, color="#FFFFFF", family="Inter, sans-serif"
+                ),
+                hovertemplate="<b>%{label}</b><br>Count: %{value:,}<br>Ratio: %{percent}<extra></extra>"
+                if total > 0
+                else "No traffic recorded in current window<extra></extra>",
+            )
+        ]
+    )
+    layout = _get_base_layout(title, height=height)
+    layout["showlegend"] = True
+    layout["legend"] = dict(
+        orientation="h",
+        yanchor="bottom",
+        y=-0.15,
+        xanchor="center",
+        x=0.5,
+        font=dict(size=11, color=c["text_muted"]),
+    )
+    fig.update_layout(layout)
+    st.plotly_chart(fig, width="stretch", config=PLOTLY_CONFIG)

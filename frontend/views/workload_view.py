@@ -1,254 +1,266 @@
-import math
 import streamlit as st
 import pandas as pd
 
-from frontend.services.api_client import get_workload, get_cache_stats
+from frontend.services.telemetry_service import (
+    get_workload_state,
+    get_telemetry_observation,
+)
+from frontend.services.api_client import check_health
+from frontend.utils.formatting import (
+    format_percentage,
+    format_latency,
+    format_request_rate,
+    format_duration,
+    format_timestamp,
+    format_int,
+)
 from frontend.components.styles import get_theme_colors
 from frontend.components.metric_card import render_metric_card
-from frontend.components.charts import (
-    render_line_chart,
-    render_multi_line_chart,
-)
 
 
 def render_workload_view():
-    """Render Workload Generator & Stress Simulator with interactive scenario modeling and resilience curves."""
+    """Render Workload Observability with live GET /telemetry/workload signals, classification, and access profiling."""
     c = get_theme_colors()
 
-    # Header Title Block with cleanly aligned right badge
+    # Fetch live telemetry
+    health = check_health()
+    is_live = health.get("status") == "ok"
+
+    workload = get_workload_state()
+    obs = get_telemetry_observation()
+
+    # Header Title Block
     header_html = (
-        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 22px 0; flex-wrap: wrap; gap: 12px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 18px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
-        f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
-        f'Workload Generator & <span style="color: {c["cyan"]} !important;">Stress Simulator</span>'
-        f'</h1>'
-        f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 820px;">'
-        f'Simulate realistic production access patterns, trace replays, scan pollutions, and stress bursts to evaluate adaptive resilience.'
-        f'</p>'
-        f'</div>'
-        f'<div style="display: flex; align-items: center; padding-top: 6px;">'
-        f'<span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 12px; white-space: nowrap;">'
-        f'TRAFFIC MODELING &bull; RESILIENCE TESTING'
+        f'<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">'
+        f'<span style="font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(56, 189, 248, 0.12); color: {c["cyan"]}; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 4px; padding: 2px 8px;">'
+        f'GET /telemetry/workload &bull; REST API CONTRACT'
         f'</span>'
+        f'</div>'
+        f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
+        f'Workload <span style="color: {c["cyan"]} !important;">Observability & Dynamics</span>'
+        f'</h1>'
+        f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 850px;">'
+        f'Live observation of ingress request rate, cache hit/miss distributions, downstream latency penalties, and traffic classification.'
+        f'</p>'
         f'</div>'
         f'</div>'
     )
     st.markdown(header_html, unsafe_allow_html=True)
 
     # --------------------------------------------------
-    # SCENARIOS DEFINITION
+    # WORKLOAD OBSERVABILITY EXPLANATORY PANEL (MANDATORY SPEC)
     # --------------------------------------------------
-    scenarios = {
-        "E-Commerce Flash Sale (Zipfian Skew)": {
-            "badge": "FLASH SALE",
-            "badge_class": "badge-hot",
-            "desc": "Heavy access concentration on top 5% hot products. Tests frequency caching without thrashing cold inventory.",
-            "rps": 2400,
-            "skew": 1.25,
-            "read_ratio": 94,
-            "hit_rate_pred": 92.4,
-            "lru_hit_rate": 79.1,
-        },
-        "Generative AI & LLM Inference Spike": {
-            "badge": "AI INFERENCE",
-            "badge_class": "badge-protected",
-            "desc": "High recompute cost ($0.08/call), moderate concurrency, extreme latency penalty on cache misses.",
-            "rps": 850,
-            "skew": 0.95,
-            "read_ratio": 88,
-            "hit_rate_pred": 88.6,
-            "lru_hit_rate": 72.0,
-        },
-        "Cache Thrashing Attack (Scan Pollution)": {
-            "badge": "SCAN ATTACK",
-            "badge_class": "badge-risk",
-            "desc": "Uniform pseudo-random scans designed to evict everything in standard LRU. Tests adaptive scan resistance.",
-            "rps": 3200,
-            "skew": 0.20,
-            "read_ratio": 99,
-            "hit_rate_pred": 76.5,
-            "lru_hit_rate": 31.2,
-        },
-        "Dynamic Microservices Burst": {
-            "badge": "MICROSERVICES",
-            "badge_class": "badge-active",
-            "desc": "Mixed read-write storm with rapid invalidations and short TTL dependencies across distributed tiers.",
-            "rps": 1800,
-            "skew": 0.85,
-            "read_ratio": 72,
-            "hit_rate_pred": 85.2,
-            "lru_hit_rate": 74.8,
-        },
-    }
-
-    # --------------------------------------------------
-    # ARCHETYPE SUMMARY CARDS
-    # --------------------------------------------------
-    st.markdown("### Select Traffic Archetype")
-    c1, c2, c3, c4 = st.columns(4)
-
-    cols = [c1, c2, c3, c4]
-    for idx, (name, sc) in enumerate(scenarios.items()):
-        with cols[idx]:
-            card_html = f"""
-            <div class="hero-card" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 14px 16px;">
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span class="badge-pill {sc['badge_class']}">{sc['badge']}</span>
-                        <span style="font-size: 11px; font-weight: 700; color: {c['cyan']};">{sc['rps']} RPS</span>
-                    </div>
-                    <div style="font-size: 14px; font-weight: 800; color: {c['text']}; margin-bottom: 6px;">
-                        {name.split(' (')[0]}
-                    </div>
-                    <p class="muted" style="font-size: 11px; line-height: 1.4; margin: 0 0 10px 0;">
-                        {sc['desc']}
-                    </p>
-                </div>
-                <div style="border-top: 1px solid {c['card_border']}; padding-top: 8px; display: flex; justify-content: space-between; font-size: 11px;">
-                    <span style="color: #10B981; font-weight: 700;">Adaptive: {sc['hit_rate_pred']}%</span>
-                    <span style="color: {c['text_muted']};">LRU: {sc['lru_hit_rate']}%</span>
-                </div>
-            </div>
-            """
-            st.markdown(card_html, unsafe_allow_html=True)
-
-    selected_scenario = st.selectbox(
-        "Active Traffic Profile",
-        list(scenarios.keys()),
-        index=0,
-        label_visibility="collapsed",
+    expl_panel_html = (
+        f'<div class="hero-card" style="padding: 14px 18px; margin-bottom: 20px; border-left: 4px solid {c["cyan"]} !important;">'
+        f'<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">'
+        f'<span style="font-size: 15px;">🔍</span>'
+        f'<strong style="font-size: 13.5px; color: {c["text"]};">Signal Observation Framework</strong>'
+        f'</div>'
+        f'<p style="font-size: 12.5px; color: {c["text_muted"]}; margin: 0; line-height: 1.5;">'
+        f'The system observes <strong>request rate</strong>, <strong>cache hit/miss behavior</strong>, '
+        f'<strong>backend latency</strong> and <strong>access patterns</strong> to understand workload behavior.'
+        f'</p>'
+        f'</div>'
     )
-    active_sc = scenarios[selected_scenario]
+    st.markdown(expl_panel_html, unsafe_allow_html=True)
 
+    # --------------------------------------------------
+    # LIVE WORKLOAD KPI ROW
+    # --------------------------------------------------
+    k1, k2, k3, k4 = st.columns(4)
+
+    req_rate = workload.get("request_rate", obs.get("request_rate", 0.0))
+    hit_rate = workload.get("hit_rate", obs.get("hit_rate", 0.0))
+    miss_rate = workload.get("miss_rate", obs.get("miss_rate", 0.0))
+    latency_ms = workload.get("backend_latency_ms", obs.get("backend_latency_ms", 0.0))
+    window_sec = workload.get("window_seconds", obs.get("window_seconds", 0.0))
+    timestamp = workload.get("timestamp", obs.get("timestamp"))
+
+    with k1:
+        render_metric_card(
+            title="Request Ingress Rate",
+            value=format_request_rate(req_rate),
+            subtitle=f"Observed window: {format_duration(window_sec)}",
+            tag="VELOCITY",
+            tooltip="Live request ingestion rate computed over sliding observation window.",
+            progress_value=min(1.0, float(req_rate) / 10.0) if req_rate > 0 else 0.05,
+            progress_color=c["cyan"],
+            is_floating=True,
+        )
+
+    with k2:
+        render_metric_card(
+            title="Cache Hit Rate",
+            value=format_percentage(hit_rate),
+            subtitle=f"{format_percentage(miss_rate)} miss rate",
+            tag="HIT RATIO",
+            tooltip="Proportion of incoming requests satisfied directly by the cache.",
+            progress_value=min(1.0, max(0.0, float(hit_rate))),
+            progress_color="#10B981",
+        )
+
+    with k3:
+        render_metric_card(
+            title="Cache Miss Rate",
+            value=format_percentage(miss_rate),
+            subtitle="Backend round-trips",
+            tag="MISS RATIO",
+            tooltip="Proportion of requests that missed cache and hit the database/recompute layer.",
+            progress_value=min(1.0, max(0.0, float(miss_rate))),
+            progress_color=c["amber"] if miss_rate > 0.3 else c["cyan"],
+        )
+
+    with k4:
+        render_metric_card(
+            title="Backend Miss Latency",
+            value=format_latency(latency_ms),
+            subtitle="Downstream penalty",
+            tag="LATENCY",
+            tooltip="Measured execution duration for retrieving or computing missed keys.",
+            progress_value=min(1.0, float(latency_ms) / 150.0) if latency_ms > 0 else 0.1,
+            progress_color=c["purple"],
+            is_floating=True,
+        )
+
+    st.write("")
+
+    # --------------------------------------------------
+    # WORKLOAD CLASSIFICATION CARD (HONEST NULL HANDLING)
+    # --------------------------------------------------
+    workload_type = workload.get("workload_type")
+    raw_metrics = workload.get("metrics")
+
+    # Strict compliance rule: If workload_type is null, display "Not classified yet". Never fabricate.
+    has_classification = workload_type is not None and str(workload_type).strip() != ""
+    classification_display = str(workload_type) if has_classification else "Not classified yet"
+    status_tag = "ACTIVE CLASSIFICATION" if has_classification else "INFERENCE ENGINE PENDING"
+    status_color = "#10B981" if has_classification else c["amber"]
+    badge_cls = "badge-active" if has_classification else "badge-hot"
+
+    col_class, col_meta = st.columns([1.3, 1.0])
+
+    with col_class:
+        class_html = (
+            f'<div class="status-card" style="box-shadow: 0 4px 16px rgba(0,0,0,0.12);">'
+            f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">'
+            f'<span class="muted" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">WORKLOAD INFERENCE STATUS</span>'
+            f'<span class="badge-pill {badge_cls}">{status_tag}</span>'
+            f'</div>'
+            f'<div style="font-size: 22px; font-weight: 800; color: {c["text"]}; margin: 4px 0 10px 0; letter-spacing: -0.01em;">'
+            f'{classification_display}'
+            f'</div>'
+            f'<p style="font-size: 12.5px; color: {c["text_muted"]}; line-height: 1.5; margin: 0 0 16px 0;">'
+        )
+
+        if has_classification:
+            class_html += (
+                f'The backend classifier evaluated window access velocity and categorized active traffic as '
+                f'<strong style="color:{c["cyan"]};">{classification_display}</strong>.'
+            )
+        else:
+            class_html += (
+                f'The backend classification engine has not yet classified this observation window. '
+                f'In accordance with specification guidelines, the system displays <em>Not classified yet</em> '
+                f'rather than fabricating a synthetic workload label.'
+            )
+
+        class_html += (
+            f'</p>'
+            f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid {c["card_border"]}; padding-top: 12px;">'
+            f'<div style="background:{c["card_bg_elevated"]}; padding: 8px 12px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
+            f'<span class="muted" style="font-size:10px; font-weight:700; text-transform:uppercase;">Observed Window</span>'
+            f'<div style="font-size: 14px; font-weight: 700; color: {c["text"]}; margin-top: 2px;">{format_duration(window_sec)}</div>'
+            f'</div>'
+            f'<div style="background:{c["card_bg_elevated"]}; padding: 8px 12px; border-radius: 6px; border: 1px solid {c["card_border"]};">'
+            f'<span class="muted" style="font-size:10px; font-weight:700; text-transform:uppercase;">Telemetry Timestamp</span>'
+            f'<div style="font-size: 13px; font-weight: 600; color: {c["text_subtle"]}; margin-top: 2px;">{format_timestamp(timestamp)}</div>'
+            f'</div>'
+            f'</div>'
+            f'</div>'
+        )
+        st.markdown(class_html, unsafe_allow_html=True)
+
+    with col_meta:
+        metrics_html = (
+            f'<div class="status-card" style="box-shadow: 0 4px 16px rgba(0,0,0,0.12);">'
+            f'<div style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase; margin-bottom: 10px;">'
+            f'Backend Workload Metrics Payload'
+            f'</div>'
+        )
+        if raw_metrics:
+            metrics_html += (
+                f'<pre style="background:{c["card_bg_elevated"]}; border:1px solid {c["card_border"]}; padding:10px; border-radius:6px; font-size:11px; color:{c["cyan"]}; max-height:160px; overflow-y:auto;">'
+                f'{str(raw_metrics)}'
+                f'</pre>'
+            )
+        else:
+            metrics_html += (
+                f'<div style="background:{c["card_bg_elevated"]}; border:1px solid {c["card_border"]}; padding:12px; border-radius:6px;">'
+                f'<div style="font-size:12px; color:{c["text_subtle"]};">'
+                f'<code>metrics: null</code><br><br>'
+                f'The backend telemetry payload contains no secondary metric dictionary for this window. '
+                f'Additional skew and concurrency indices will render here automatically when exposed.'
+                f'</div>'
+                f'</div>'
+            )
+        metrics_html += (
+            f'<div style="margin-top: 14px; font-size: 11px; color: {c["text_subtle"]};">'
+            f'Endpoint: <code>GET /telemetry/workload</code> &bull; Polling: Real-time'
+            f'</div>'
+            f'</div>'
+        )
+        st.markdown(metrics_html, unsafe_allow_html=True)
+
+    st.write("")
+
+    # --------------------------------------------------
+    # CURRENT WINDOW ACCESS PATTERNS
+    # --------------------------------------------------
     st.markdown(
-        f'<div style="height: 1px; background: {c["card_border"]}; margin: 20px 0;"></div>',
-        unsafe_allow_html=True,
-    )
-
-    # --------------------------------------------------
-    # SIMULATION PARAMETERS
-    # --------------------------------------------------
-    st.markdown("### Simulation Parameters & Traffic Geometry")
-
-    p1, p2, p3, p4 = st.columns(4)
-    with p1:
-        target_rps = st.slider(
-            "Ingress Target RPS",
-            min_value=100,
-            max_value=5000,
-            value=active_sc["rps"],
-            step=100,
-        )
-    with p2:
-        skew_param = st.slider(
-            "Zipfian Skew Parameter (α)",
-            min_value=0.1,
-            max_value=2.0,
-            value=active_sc["skew"],
-            step=0.05,
-        )
-    with p3:
-        read_ratio = st.slider(
-            "Read : Write Ratio (%)",
-            min_value=50,
-            max_value=100,
-            value=active_sc["read_ratio"],
-            step=1,
-        )
-    with p4:
-        working_set = st.slider(
-            "Working Set Size (Keys)",
-            min_value=1000,
-            max_value=50000,
-            value=12500,
-            step=500,
-        )
-
-    # --------------------------------------------------
-    # REAL-TIME RESILIENCE SIMULATION CURVES
-    # --------------------------------------------------
-    st.markdown(
-        f"""<div style="display: flex; justify-content: space-between; align-items: center; margin: 16px 0 8px 0;">
+        f"""<div style="margin: 10px 0 12px 0;">
             <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
-                Comparative Resilience Under Active Stress (120s Burst)
+                Observed Window Access Counts & Key Velocity
             </h3>
-            <span class="badge-pill badge-active">SYNTHETIC RUNTIME BENCHMARK</span>
+            <p style="margin: 4px 0 0 0; font-size: 12.5px; color: {c['text_muted']};">
+                Active access frequency observed across current and previous sliding telemetry windows.
+            </p>
         </div>""",
         unsafe_allow_html=True,
     )
-    st.caption(
-        "Demonstrates Adaptive Engine stability during sudden bursts vs standard LRU and LFU degradations."
-    )
 
-    time_steps = [f"+{t}s" for t in range(0, 121, 10)]
+    curr_counts = obs.get("current_window_access_counts", {})
+    prev_counts = obs.get("previous_window_access_counts", {})
 
-    # Generate realistic response curves based on sliders
-    adaptive_curve = []
-    lru_curve = []
-    lfu_curve = []
+    all_keys = set(list(curr_counts.keys()) + list(prev_counts.keys()))
 
-    base_adaptive = active_sc["hit_rate_pred"] + (skew_param - 1.0) * 8.0
-    base_lru = active_sc["lru_hit_rate"] + (skew_param - 1.0) * 12.0
-    base_lfu = base_lru - 4.0
-
-    for i in range(len(time_steps)):
-        dip = 4.0 * math.sin(i / 2.0)
-        lru_dip = 14.0 * math.sin(i / 2.2) if skew_param < 0.5 else dip * 2.2
-        adaptive_curve.append(
-            round(min(98.5, max(65.0, base_adaptive - abs(dip) * 0.4)), 1)
+    if all_keys:
+        table_rows = []
+        for k in sorted(all_keys):
+            c_cnt = curr_counts.get(k, 0)
+            p_cnt = prev_counts.get(k, 0)
+            velocity = c_cnt - p_cnt
+            table_rows.append({
+                "Key Identifier": k,
+                "Current Window Accesses": c_cnt,
+                "Previous Window Accesses": p_cnt,
+                "Velocity Delta": f"{'+' if velocity > 0 else ''}{velocity}",
+            })
+        df_access = pd.DataFrame(table_rows)
+        st.dataframe(df_access, use_container_width=True, hide_index=True)
+    else:
+        st.markdown(
+            f"""
+            <div class="hero-card" style="text-align: center; padding: 28px 16px;">
+                <div style="font-size: 24px; margin-bottom: 6px;">📥</div>
+                <div style="font-weight: 700; font-size: 13.5px; color: {c['text']}; margin-bottom: 4px;">
+                    No Active Access Keys Recorded Yet
+                </div>
+                <div style="font-size: 12px; color: {c['text_muted']}; max-width: 420px; margin: 0 auto 12px auto;">
+                    Run requests in the <strong>Request Simulator</strong> to observe live access counts dynamically populate here.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-        lru_curve.append(
-            round(min(92.0, max(25.0, base_lru - abs(lru_dip))), 1)
-        )
-        lfu_curve.append(
-            round(min(90.0, max(28.0, base_lfu - abs(lru_dip) * 1.1)), 1)
-        )
-
-    series = {
-        "Adaptive Engine (Satyagrah)": adaptive_curve,
-        "Static LRU": lru_curve,
-        "Static LFU": lfu_curve,
-    }
-
-    render_multi_line_chart(
-        x=time_steps,
-        series_dict=series,
-        title="Simulated Hit Rate Over Stress Duration (%)",
-        y_title="Cache Hit Rate (%)",
-        unit="%",
-        height=320,
-    )
-
-    st.markdown(
-        f'<div style="height: 1px; background: {c["card_border"]}; margin: 20px 0;"></div>',
-        unsafe_allow_html=True,
-    )
-
-    # --------------------------------------------------
-    # LIVE STRESS GENERATION CONTROLS
-    # --------------------------------------------------
-    col_ctrl, col_diag = st.columns([1.2, 1.2])
-
-    with col_ctrl:
-        st.markdown("### Stress Injector Controls")
-        b1, b2 = st.columns(2)
-        with b1:
-            if st.button(
-                "Trigger 10k RPS Burst", type="primary", width="stretch"
-            ):
-                st.toast("Dispatched 10,000 RPS burst trace to Tier-1 Arbiter!")
-        with b2:
-            if st.button("Simulate Scan Attack", width="stretch"):
-                st.toast("Scan attack trace injected: testing adaptive shield!")
-
-    with col_diag:
-        st.markdown("### Workload Diagnostic Summary")
-        diag_html = f"""
-        <div class="terminal-box" style="font-size: 11.5px; padding: 12px 14px;">
-            <div>&bull; Ingress Concurrency: <strong>{target_rps} req/sec</strong></div>
-            <div>&bull; Distribution: <strong>Zipfian (α = {skew_param})</strong></div>
-            <div>&bull; Recompute Spend Avoidance: <strong>+${(target_rps * 0.004):.2f}/min</strong></div>
-            <div style="color: #10B981; font-weight: 700; margin-top: 4px;">&bull; Engine Status: ZERO ADAPTIVE LOSS DETECTED</div>
-        </div>
-        """
-        st.markdown(diag_html, unsafe_allow_html=True)

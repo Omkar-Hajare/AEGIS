@@ -7,6 +7,16 @@ from frontend.services.api_client import (
     get_cache_objects,
     get_workload,
 )
+from frontend.services.telemetry_service import (
+    get_telemetry_observation,
+    get_system_state,
+)
+from frontend.utils.formatting import (
+    format_request_rate,
+    format_percentage,
+    format_latency,
+    format_bytes,
+)
 from frontend.components.styles import get_theme_colors
 from frontend.components.metric_card import render_metric_card
 from frontend.components.decision_card import render_decision_card
@@ -20,6 +30,10 @@ def render_adaptive_decisions_view():
     """Render Adaptive Decisions & Arbitration Engine with weight sensitivity tuner and live audit log."""
     c = get_theme_colors()
 
+    # Live telemetry feeding the adaptive arbiter
+    obs = get_telemetry_observation()
+    sys_state = get_system_state()
+
     # Fetch Data
     decision = get_adaptive_decision()
     stats = get_cache_stats()
@@ -28,7 +42,7 @@ def render_adaptive_decisions_view():
 
     # Header Title Block with cleanly aligned right badge
     header_html = (
-        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 22px 0; flex-wrap: wrap; gap: 12px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 16px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
         f'Adaptive Decisions & <span style="color: {c["cyan"]} !important;">Arbitration Engine</span>'
@@ -45,6 +59,72 @@ def render_adaptive_decisions_view():
         f'</div>'
     )
     st.markdown(header_html, unsafe_allow_html=True)
+
+    # --------------------------------------------------
+    # HONEST INTEGRATION NOTICE (PERSON 1 BOUNDARY)
+    # --------------------------------------------------
+    notice_html = (
+        f'<div class="hero-card" style="padding: 12px 18px; margin-bottom: 20px; border-left: 4px solid {c["cyan"]} !important;">'
+        f'<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">'
+        f'<div style="display: flex; align-items: center; gap: 8px;">'
+        f'<span style="font-size: 14px;">⚡</span>'
+        f'<strong style="font-size: 13px; color: {c["text"]};">Adaptive Engine Integration: Interface & Component Architecture Ready</strong>'
+        f'</div>'
+        f'<span class="badge-pill badge-active" style="font-size: 10px;">PERSON 1 CONTRACT BOUNDARY</span>'
+        f'</div>'
+        f'<p style="font-size: 12px; color: {c["text_muted"]}; margin: 0; line-height: 1.5;">'
+        f'The live backend exposes telemetry streams (<code>/telemetry/observation</code>, <code>/telemetry/workload</code>, <code>/telemetry/system</code>). '
+        f'The dedicated <code>/adaptive/decisions</code> decision-history endpoint is owned by Person 1 and will be integrated into the backend REST API next. '
+        f'Below displays the live input signals feeding the arbiter, followed by the complete arbitration model and sensitivity playground.'
+        f'</p>'
+        f'</div>'
+    )
+    st.markdown(notice_html, unsafe_allow_html=True)
+
+    # Real signals feeding the arbiter strip
+    st.markdown(
+        f"""<div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; font-size: 1rem; font-weight: 700; color: {c['text']};">
+                Active Telemetry Signals Feeding Arbiter
+            </h4>
+            <span style="font-size: 11px; color: {c['cyan']}; font-weight: 600;">LIVE INPUT VECTORS</span>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+    s1, s2, s3, s4 = st.columns(4)
+    with s1:
+        st.markdown(
+            f"""<div class="status-card" style="padding: 10px 12px;">
+                <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">REQUEST VELOCITY</span>
+                <div style="font-size: 15px; font-weight: 800; color: {c['cyan']};">{format_request_rate(obs.get("request_rate", 0.0))}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+    with s2:
+        st.markdown(
+            f"""<div class="status-card" style="padding: 10px 12px;">
+                <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">CURRENT HIT RATIO</span>
+                <div style="font-size: 15px; font-weight: 800; color: #10B981;">{format_percentage(obs.get("hit_rate", 0.0))}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+    with s3:
+        st.markdown(
+            f"""<div class="status-card" style="padding: 10px 12px;">
+                <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">BACKEND RETRIEVAL DELAY</span>
+                <div style="font-size: 15px; font-weight: 800; color: {c['purple']};">{format_latency(obs.get("backend_latency_ms", 0.0))}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+    with s4:
+        st.markdown(
+            f"""<div class="status-card" style="padding: 10px 12px;">
+                <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">CACHE USAGE</span>
+                <div style="font-size: 15px; font-weight: 800; color: {c['amber']};">{format_bytes(sys_state.get("cache_usage_bytes", 0))}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+    st.write("")
 
     # --------------------------------------------------
     # WORKLOAD STATE & KPI SUMMARY STRIP

@@ -37,6 +37,21 @@ def render_benchmarks_view():
     policies = list(df["policy"])
 
     # --------------------------------------------------
+    # BENCHMARK DATASET SOURCE CARD (MANDATORY SPEC RULE)
+    # --------------------------------------------------
+    source_html = (
+        f'<div class="hero-card" style="padding: 10px 16px; margin-bottom: 16px; border-left: 4px solid {c["cyan"]} !important; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">'
+        f'<div style="display: flex; align-items: center; gap: 8px;">'
+        f'<span style="font-size: 13px;">📁</span>'
+        f'<span style="font-size: 11.5px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">BENCHMARK SUITE:</span>'
+        f'<span style="font-size: 12px; font-weight: 700; color: {c["text"]};">Controlled Empirical Trace Evaluation (100k Operations, Zipfian s=1.15, k6 Harness)</span>'
+        f'</div>'
+        f'<span class="badge-pill badge-active" style="font-size: 10px;">OFFLINE REPLAY DATASET</span>'
+        f'</div>'
+    )
+    st.markdown(source_html, unsafe_allow_html=True)
+
+    # --------------------------------------------------
     # EXECUTIVE SUMMARY RIBBON
     # --------------------------------------------------
     exec_ribbon_html = (

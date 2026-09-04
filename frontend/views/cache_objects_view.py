@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 
 from frontend.services.api_client import get_cache_objects, get_cache_stats
+from frontend.services.telemetry_service import get_telemetry_observation
+from frontend.utils.formatting import format_int
 from frontend.components.styles import get_theme_colors
 from frontend.components.metric_card import render_metric_card
 from frontend.components.charts import (
@@ -17,6 +19,10 @@ from frontend.components.status_badge import (
 def render_cache_objects_view():
     """Render Cache Objects & Memory Landscape with interactive 2D density chart and diagnostic inspector."""
     c = get_theme_colors()
+
+    # Telemetry live keys observation
+    obs = get_telemetry_observation()
+    live_access_counts = obs.get("current_window_access_counts", {})
 
     # --------------------------------------------------
     # STATE MANAGEMENT
@@ -51,7 +57,7 @@ def render_cache_objects_view():
 
     # Header Title Block with cleanly aligned right badge
     header_html = (
-        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 22px 0; flex-wrap: wrap; gap: 12px;">'
+        f'<div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 8px 0 16px 0; flex-wrap: wrap; gap: 12px;">'
         f'<div>'
         f'<h1 style="margin: 0 0 6px 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; color: {c["text"]} !important;">'
         f'Cache Objects & <span style="color: {c["cyan"]} !important;">Memory Landscape</span>'
@@ -68,6 +74,53 @@ def render_cache_objects_view():
         f'</div>'
     )
     st.markdown(header_html, unsafe_allow_html=True)
+
+    # --------------------------------------------------
+    # HONEST INTEGRATION NOTICE (MANDATORY SPEC COMPLIANCE)
+    # --------------------------------------------------
+    notice_html = (
+        f'<div class="hero-card" style="padding: 12px 18px; margin-bottom: 20px; border-left: 4px solid {c["amber"]} !important;">'
+        f'<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">'
+        f'<div style="display: flex; align-items: center; gap: 8px;">'
+        f'<span style="font-size: 14px;">⚠️</span>'
+        f'<strong style="font-size: 13px; color: {c["text"]};">Object Metadata REST API: Pending Public Exposure</strong>'
+        f'</div>'
+        f'<span class="badge-pill badge-hot" style="font-size: 10px;">FUTURE BACKEND CONTRACT</span>'
+        f'</div>'
+        f'<p style="font-size: 12px; color: {c["text_muted"]}; margin: 0; line-height: 1.5;">'
+        f'Object-level persistence is available internally in the backend cache engine, but a dedicated public REST endpoint '
+        f'(e.g. <code>GET /cache/objects</code>) is not yet exposed by FastAPI. '
+        f'Below shows live keys observed in active telemetry, followed by the component architecture blueprint.'
+        f'</p>'
+        f'</div>'
+    )
+    st.markdown(notice_html, unsafe_allow_html=True)
+
+    # Live Observed Keys in current telemetry window
+    if live_access_counts:
+        st.markdown(
+            f"""<div style="margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center;">
+                <h4 style="margin: 0; font-size: 1rem; font-weight: 700; color: {c['text']};">
+                    Live Keys Observed in Active Telemetry Window
+                </h4>
+                <span class="badge-pill badge-active" style="font-size: 10px;">GET /telemetry/observation</span>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+        l_cols = st.columns(min(4, len(live_access_counts)))
+        for idx, (lk, lcnt) in enumerate(sorted(live_access_counts.items(), key=lambda x: x[1], reverse=True)[:4]):
+            with l_cols[idx % len(l_cols)]:
+                st.markdown(
+                    f"""
+                    <div class="status-card" style="padding: 10px 12px;">
+                        <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">KEY</span>
+                        <div style="font-family: monospace; font-size: 12px; font-weight: 700; color: {c['cyan']}; margin: 2px 0 4px 0;">{lk}</div>
+                        <div style="font-size: 13px; font-weight: 800; color: {c['text']};">{format_int(lcnt)} accesses</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        st.write("")
 
     # --------------------------------------------------
     # HERO METRICS STRIP
