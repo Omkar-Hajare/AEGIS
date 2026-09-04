@@ -1,41 +1,75 @@
 """Cost model for the Adaptive Cache System.
 
-Provides pure, data-driven cost and economic evaluation for cached objects:
+Provides pure, platform-aware cost and economic evaluation for cached objects:
 - Normalized retrieval cost signals across candidate objects.
-- Backend cost savings estimation from avoided backend requests.
+- Backend cost savings estimation from avoided backend requests and execution latency.
 - Cache memory RAM cost estimation.
 - Net economic benefit estimation (Backend Cost Saved - Cache RAM Cost).
 - Value density calculation (Score / (Size ^ alpha)).
+
+Note:
+    All cost metrics and profile parameters represent configurable, simulated
+    economic models for algorithmic decision-making and benchmark demonstrations.
+    They do NOT represent actual or contractual vendor/cloud pricing.
 """
 
 from __future__ import annotations
 
 import math
 from collections.abc import Mapping
+from typing import Any
 
+from backend.cost.cost_profile import CostModelValidationError, CostProfile
+from backend.cost.profiles import DEFAULT_PROFILE
 from contracts.schemas.cache import CacheObject
 
 BYTES_PER_GB: int = 1_000_000_000
+DEFAULT_BACKEND_COST_PER_REQUEST: float = 0.0
 DEFAULT_BACKEND_COST_PER_MS: float = 1.0
 DEFAULT_CACHE_RAM_COST_PER_GB_HOUR: float = 0.10
 DEFAULT_HOURS: float = 1.0
 DEFAULT_ALPHA: float = 1.0
 DEFAULT_IDENTICAL_COST_NORMALIZATION: float = 0.5
 
-
-class CostModelValidationError(ValueError, TypeError):
-    """Raised when an argument passed to the cost model is invalid."""
+__all__ = [
+    "BYTES_PER_GB",
+    "DEFAULT_ALPHA",
+    "DEFAULT_BACKEND_COST_PER_MS",
+    "DEFAULT_BACKEND_COST_PER_REQUEST",
+    "DEFAULT_CACHE_RAM_COST_PER_GB_HOUR",
+    "DEFAULT_HOURS",
+    "DEFAULT_IDENTICAL_COST_NORMALIZATION",
+    "CostModel",
+    "CostModelValidationError",
+]
 
 
 class CostModel:
-    """Pure, stateless cost and economic evaluation model for adaptive caching."""
+    """Pure, platform-aware cost and economic evaluation model for adaptive caching."""
 
     BYTES_PER_GB: int = BYTES_PER_GB
+    DEFAULT_BACKEND_COST_PER_REQUEST: float = DEFAULT_BACKEND_COST_PER_REQUEST
     DEFAULT_BACKEND_COST_PER_MS: float = DEFAULT_BACKEND_COST_PER_MS
     DEFAULT_CACHE_RAM_COST_PER_GB_HOUR: float = DEFAULT_CACHE_RAM_COST_PER_GB_HOUR
     DEFAULT_HOURS: float = DEFAULT_HOURS
     DEFAULT_ALPHA: float = DEFAULT_ALPHA
     DEFAULT_IDENTICAL_COST_NORMALIZATION: float = DEFAULT_IDENTICAL_COST_NORMALIZATION
+
+    def __init__(self, profile: CostProfile | None = None) -> None:
+        """Initialize CostModel with an optional platform CostProfile.
+
+        Args:
+            profile: Optional platform CostProfile specifying cost parameters.
+                If None, DEFAULT_PROFILE is used.
+
+        Raises:
+            CostModelValidationError: If profile is not a CostProfile instance.
+        """
+        if profile is not None and not isinstance(profile, CostProfile):
+            raise CostModelValidationError(
+                f"profile must be a CostProfile instance, got {type(profile).__name__}"
+            )
+        self.profile: CostProfile = profile or DEFAULT_PROFILE
 
     @staticmethod
     def normalize_retrieval_costs(
@@ -89,21 +123,25 @@ class CostModel:
         cost_range = max_cost - min_cost
         return {k: (c - min_cost) / cost_range for k, c in costs.items()}
 
-    @staticmethod
     def estimate_backend_cost_saved(
+        self,
         object: CacheObject,
         cached_requests: int,
-        backend_cost_per_ms: float = DEFAULT_BACKEND_COST_PER_MS,
+        backend_cost_per_ms: float | None = None,
+        backend_cost_per_request: float | None = None,
     ) -> float:
         """Estimate backend regeneration cost avoided by serving requests from cache.
 
-        Formula: retrieval_cost_ms * cached_requests * backend_cost_per_ms
+        Formula:
+            saved = cached_requests * (cost_per_request + retrieval_cost_ms * cost_per_ms)
 
         Args:
             object: Target CacheObject instance.
             cached_requests: Number of requests served from cache (>= 0, non-bool).
-            backend_cost_per_ms: Backend cost rate per millisecond of
-                retrieval cost (>= 0).
+            backend_cost_per_ms: Variable cost rate per millisecond of retrieval cost (>= 0).
+                If None, uses active CostProfile.backend_cost_per_ms.
+            backend_cost_per_request: Base overhead cost rate per avoided request (>= 0).
+                If None, uses active CostProfile.backend_cost_per_request.
 
         Returns:
             Calculated cost savings as a float.
@@ -111,47 +149,98 @@ class CostModel:
         Raises:
             CostModelValidationError: If any argument is invalid or out of bounds.
         """
-        if not isinstance(object, CacheObject):
+        # Support invocation both as instance method and direct static/class call
+        if not isinstance(self, CostModel):
+            actual_obj: Any = self
+            actual_requests: Any = object
+            cost_ms_arg = (
+                DEFAULT_BACKEND_COST_PER_MS
+                if cached_requests is None
+                else cached_requests
+            )
+            cost_req_arg = (
+                DEFAULT_BACKEND_COST_PER_REQUEST
+                if backend_cost_per_ms is None
+                else backend_cost_per_ms
+            )
+            profile_cost_ms = DEFAULT_BACKEND_COST_PER_MS
+            profile_cost_req = DEFAULT_BACKEND_COST_PER_REQUEST
+        else:
+            actual_obj = object
+            actual_requests = cached_requests
+            cost_ms_arg = backend_cost_per_ms
+            cost_req_arg = backend_cost_per_request
+            profile_cost_ms = self.profile.backend_cost_per_ms
+            profile_cost_req = self.profile.backend_cost_per_request
+
+        if not isinstance(actual_obj, CacheObject):
             raise CostModelValidationError(
-                f"object must be a CacheObject, got {type(object).__name__}"
+                f"object must be a CacheObject, got {type(actual_obj).__name__}"
             )
 
-        if isinstance(cached_requests, bool) or not isinstance(cached_requests, int):
+        if isinstance(actual_requests, bool) or not isinstance(actual_requests, int):
             raise CostModelValidationError(
                 "cached_requests must be an integer, "
-                f"got {type(cached_requests).__name__}"
+                f"got {type(actual_requests).__name__}"
             )
-        if cached_requests < 0:
+        if actual_requests < 0:
             raise CostModelValidationError(
-                f"cached_requests must be non-negative, got {cached_requests}"
+                f"cached_requests must be non-negative, got {actual_requests}"
             )
 
-        if isinstance(backend_cost_per_ms, bool) or not isinstance(
-            backend_cost_per_ms, (int, float)
-        ):
-            raise CostModelValidationError(
-                "backend_cost_per_ms must be numeric, "
-                f"got {type(backend_cost_per_ms).__name__}"
-            )
-        if not math.isfinite(backend_cost_per_ms):
-            raise CostModelValidationError(
-                f"backend_cost_per_ms must be finite, got {backend_cost_per_ms}"
-            )
-        if backend_cost_per_ms < 0.0:
-            raise CostModelValidationError(
-                f"backend_cost_per_ms must be non-negative, got {backend_cost_per_ms}"
-            )
+        # Resolve effective cost rates
+        if cost_ms_arg is None:
+            effective_cost_ms = float(profile_cost_ms)
+        else:
+            if isinstance(cost_ms_arg, bool) or not isinstance(
+                cost_ms_arg, (int, float)
+            ):
+                raise CostModelValidationError(
+                    "backend_cost_per_ms must be numeric, "
+                    f"got {type(cost_ms_arg).__name__}"
+                )
+            if not math.isfinite(cost_ms_arg):
+                raise CostModelValidationError(
+                    f"backend_cost_per_ms must be finite, got {cost_ms_arg}"
+                )
+            if cost_ms_arg < 0.0:
+                raise CostModelValidationError(
+                    f"backend_cost_per_ms must be non-negative, got {cost_ms_arg}"
+                )
+            effective_cost_ms = float(cost_ms_arg)
 
-        return (
-            float(object.retrieval_cost_ms)
-            * float(cached_requests)
-            * float(backend_cost_per_ms)
+        if cost_req_arg is None:
+            effective_cost_req = float(profile_cost_req)
+        else:
+            if isinstance(cost_req_arg, bool) or not isinstance(
+                cost_req_arg, (int, float)
+            ):
+                raise CostModelValidationError(
+                    "backend_cost_per_request must be numeric, "
+                    f"got {type(cost_req_arg).__name__}"
+                )
+            if not math.isfinite(cost_req_arg):
+                raise CostModelValidationError(
+                    f"backend_cost_per_request must be finite, got {cost_req_arg}"
+                )
+            if cost_req_arg < 0.0:
+                raise CostModelValidationError(
+                    f"backend_cost_per_request must be non-negative, got {cost_req_arg}"
+                )
+            effective_cost_req = float(cost_req_arg)
+
+        avoided_request_overhead = float(actual_requests) * effective_cost_req
+        avoided_latency_cost = (
+            float(actual_obj.retrieval_cost_ms)
+            * float(actual_requests)
+            * effective_cost_ms
         )
+        return avoided_request_overhead + avoided_latency_cost
 
-    @staticmethod
     def estimate_cache_ram_cost(
+        self,
         size_bytes: int,
-        cache_ram_cost_per_gb_hour: float,
+        cache_ram_cost_per_gb_hour: float | None = None,
         hours: float = DEFAULT_HOURS,
     ) -> float:
         """Estimate the RAM cost of retaining an object in cache.
@@ -161,6 +250,7 @@ class CostModel:
         Args:
             size_bytes: Object size in bytes (>= 0, non-bool).
             cache_ram_cost_per_gb_hour: Cost rate per decimal gigabyte-hour (>= 0).
+                If None, uses active CostProfile.cache_memory_cost_per_gb_hour.
             hours: Retention duration in hours (>= 0).
 
         Returns:
@@ -169,56 +259,70 @@ class CostModel:
         Raises:
             CostModelValidationError: If any argument is invalid or out of bounds.
         """
-        if isinstance(size_bytes, bool) or not isinstance(size_bytes, int):
+        # Support invocation both as instance method and direct static/class call
+        if not isinstance(self, CostModel):
+            actual_size: Any = self
+            rate_arg = cache_ram_cost_per_gb_hour
+            hours_arg = hours
+            profile_rate = DEFAULT_CACHE_RAM_COST_PER_GB_HOUR
+        else:
+            actual_size = size_bytes
+            rate_arg = cache_ram_cost_per_gb_hour
+            hours_arg = hours
+            profile_rate = self.profile.cache_memory_cost_per_gb_hour
+
+        if isinstance(actual_size, bool) or not isinstance(actual_size, int):
             raise CostModelValidationError(
-                f"size_bytes must be an integer, got {type(size_bytes).__name__}"
+                f"size_bytes must be an integer, got {type(actual_size).__name__}"
             )
-        if size_bytes < 0:
+        if actual_size < 0:
             raise CostModelValidationError(
-                f"size_bytes must be non-negative, got {size_bytes}"
+                f"size_bytes must be non-negative, got {actual_size}"
             )
 
-        if isinstance(cache_ram_cost_per_gb_hour, bool) or not isinstance(
-            cache_ram_cost_per_gb_hour, (int, float)
-        ):
-            raise CostModelValidationError(
-                "cache_ram_cost_per_gb_hour must be numeric, "
-                f"got {type(cache_ram_cost_per_gb_hour).__name__}"
-            )
-        if not math.isfinite(cache_ram_cost_per_gb_hour):
-            raise CostModelValidationError(
-                "cache_ram_cost_per_gb_hour must be finite, "
-                f"got {cache_ram_cost_per_gb_hour}"
-            )
-        if cache_ram_cost_per_gb_hour < 0.0:
-            raise CostModelValidationError(
-                "cache_ram_cost_per_gb_hour must be non-negative, "
-                f"got {cache_ram_cost_per_gb_hour}"
-            )
+        if rate_arg is None:
+            effective_rate = float(profile_rate)
+        else:
+            if isinstance(rate_arg, bool) or not isinstance(rate_arg, (int, float)):
+                raise CostModelValidationError(
+                    "cache_ram_cost_per_gb_hour must be numeric, "
+                    f"got {type(rate_arg).__name__}"
+                )
+            if not math.isfinite(rate_arg):
+                raise CostModelValidationError(
+                    f"cache_ram_cost_per_gb_hour must be finite, got {rate_arg}"
+                )
+            if rate_arg < 0.0:
+                raise CostModelValidationError(
+                    f"cache_ram_cost_per_gb_hour must be non-negative, got {rate_arg}"
+                )
+            effective_rate = float(rate_arg)
 
-        if isinstance(hours, bool) or not isinstance(hours, (int, float)):
+        if isinstance(hours_arg, bool) or not isinstance(hours_arg, (int, float)):
             raise CostModelValidationError(
-                f"hours must be numeric, got {type(hours).__name__}"
+                f"hours must be numeric, got {type(hours_arg).__name__}"
             )
-        if not math.isfinite(hours):
-            raise CostModelValidationError(f"hours must be finite, got {hours}")
-        if hours < 0.0:
-            raise CostModelValidationError(f"hours must be non-negative, got {hours}")
+        if not math.isfinite(hours_arg):
+            raise CostModelValidationError(f"hours must be finite, got {hours_arg}")
+        if hours_arg < 0.0:
+            raise CostModelValidationError(
+                f"hours must be non-negative, got {hours_arg}"
+            )
 
         return (
-            (float(size_bytes) / float(BYTES_PER_GB))
-            * float(cache_ram_cost_per_gb_hour)
-            * float(hours)
+            (float(actual_size) / float(BYTES_PER_GB))
+            * effective_rate
+            * float(hours_arg)
         )
 
-    @classmethod
     def estimate_net_benefit(
-        cls,
+        self,
         object: CacheObject,
         cached_requests: int,
-        backend_cost_per_ms: float = DEFAULT_BACKEND_COST_PER_MS,
-        cache_ram_cost_per_gb_hour: float = DEFAULT_CACHE_RAM_COST_PER_GB_HOUR,
+        backend_cost_per_ms: float | None = None,
+        cache_ram_cost_per_gb_hour: float | None = None,
         hours: float = DEFAULT_HOURS,
+        backend_cost_per_request: float | None = None,
     ) -> float:
         """Estimate net economic benefit of retaining an object in cache.
 
@@ -234,19 +338,41 @@ class CostModel:
             backend_cost_per_ms: Backend cost rate per millisecond.
             cache_ram_cost_per_gb_hour: RAM cost rate per GB-hour.
             hours: Duration in hours.
+            backend_cost_per_request: Base overhead cost rate per avoided request.
 
         Returns:
             Net economic benefit as a float.
         """
-        saved = cls.estimate_backend_cost_saved(
-            object=object,
-            cached_requests=cached_requests,
-            backend_cost_per_ms=backend_cost_per_ms,
+        model_instance = self if isinstance(self, CostModel) else CostModel()
+        actual_obj = object if isinstance(self, CostModel) else self
+        actual_requests = cached_requests if isinstance(self, CostModel) else object
+        actual_cost_ms = (
+            backend_cost_per_ms if isinstance(self, CostModel) else cached_requests
         )
-        ram_cost = cls.estimate_cache_ram_cost(
-            size_bytes=object.size_bytes,
-            cache_ram_cost_per_gb_hour=cache_ram_cost_per_gb_hour,
-            hours=hours,
+        actual_ram_rate = (
+            cache_ram_cost_per_gb_hour
+            if isinstance(self, CostModel)
+            else backend_cost_per_ms
+        )
+        actual_hours = (
+            hours if isinstance(self, CostModel) else cache_ram_cost_per_gb_hour
+        )
+        actual_cost_req = (
+            backend_cost_per_request if isinstance(self, CostModel) else hours
+        )
+
+        eff_hours = DEFAULT_HOURS if actual_hours is None else actual_hours
+
+        saved = model_instance.estimate_backend_cost_saved(
+            object=actual_obj,
+            cached_requests=actual_requests,
+            backend_cost_per_ms=actual_cost_ms,
+            backend_cost_per_request=actual_cost_req,
+        )
+        ram_cost = model_instance.estimate_cache_ram_cost(
+            size_bytes=actual_obj.size_bytes,
+            cache_ram_cost_per_gb_hour=actual_ram_rate,
+            hours=eff_hours,
         )
         return saved - ram_cost
 

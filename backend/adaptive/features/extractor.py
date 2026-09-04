@@ -7,8 +7,8 @@ pure, deterministic, normalized adaptive features in the range [0.0, 1.0].
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Sequence
 
 from contracts.schemas import CacheObject
 

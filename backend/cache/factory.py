@@ -1,4 +1,6 @@
-from app.config import Settings, settings as default_settings
+from app.config import Settings
+from app.config import settings as default_settings
+
 from cache.in_memory import InMemoryCache
 from cache.manager import CacheManager, CacheStore
 from cache.redis import RedisCache

@@ -5,12 +5,19 @@ error handling, and input immutability.
 """
 
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from backend.adaptive.engine.decision_engine import DecisionEngine
 from backend.adaptive.eviction import EvictionPolicy
+from backend.adaptive.features.extractor import FeatureExtractor
+from backend.adaptive.scoring.scorer import AdaptiveScorer
+from backend.cost.model import CostModel
 from contracts.schemas import CacheObject
+from contracts.schemas.enums import WorkloadType
+from contracts.schemas.system import SystemState
+from contracts.schemas.workload import WorkloadState
 
 
 @pytest.fixture
@@ -653,3 +660,662 @@ def test_callable_syntax_matches_method(policy: EvictionPolicy, now: datetime) -
     res1 = policy.select_evictions(scores, objects, 100)
     res2 = policy(scores, objects, 100)
     assert res1 == res2 == ["A"]
+
+
+# ---------------------------------------------------------------------------
+# Step 2: Economic Value Density & Dynamic Retention Tests
+# ---------------------------------------------------------------------------
+
+
+def test_eviction_is_capacity_driven_not_threshold_driven(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """Eviction only triggers when usage exceeds capacity, freeing minimal bytes."""
+    objects = {
+        "obj1": CacheObject(
+            key="obj1",
+            size_bytes=200,
+            access_count=1,
+            last_accessed=now,
+            retrieval_cost_ms=1.0,
+        ),
+        "obj2": CacheObject(
+            key="obj2",
+            size_bytes=200,
+            access_count=1,
+            last_accessed=now,
+            retrieval_cost_ms=1.0,
+        ),
+    }
+    # Even with very low utility score (0.01), if usage <= capacity, no evictions happen
+    low_scores = {"obj1": 0.01, "obj2": 0.01}
+    assert policy.select_evictions(low_scores, objects, 500) == []
+    assert policy.last_value_densities is None
+
+    # When capacity is reduced so bytes_to_free = 100, exactly one object is evicted
+    evicted = policy.select_evictions(low_scores, objects, 300)
+    assert len(evicted) == 1
+    assert evicted == ["obj1"]
+
+
+def test_lowest_current_value_density_objects_selected_first(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """Objects with lowest economic value density are selected first for eviction."""
+    objects = {
+        "item_high": CacheObject(
+            key="item_high",
+            size_bytes=100,
+            access_count=1,
+            last_accessed=now,
+            retrieval_cost_ms=10.0,
+        ),
+        "item_mid": CacheObject(
+            key="item_mid",
+            size_bytes=100,
+            access_count=1,
+            last_accessed=now,
+            retrieval_cost_ms=10.0,
+        ),
+        "item_low": CacheObject(
+            key="item_low",
+            size_bytes=100,
+            access_count=1,
+            last_accessed=now,
+            retrieval_cost_ms=10.0,
+        ),
+    }
+    scores = {"item_high": 0.90, "item_mid": 0.50, "item_low": 0.20}
+    # Total usage = 300, target = 200 -> bytes_to_free = 100 (evicts 1)
+    evicted = policy.select_evictions(scores, objects, 200)
+    assert evicted == ["item_low"]
+    assert policy.last_value_densities is not None
+    assert (
+        policy.last_value_densities["item_low"]
+        < policy.last_value_densities["item_mid"]
+        < policy.last_value_densities["item_high"]
+    )
+
+
+def test_large_low_value_objects_preferentially_removed_under_high_memory_pressure(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """High memory pressure increases size penalty alpha, penalizing large objects."""
+    obj_small = CacheObject(
+        key="small",
+        size_bytes=20,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=10.0,
+    )
+    obj_large = CacheObject(
+        key="large",
+        size_bytes=200,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=10.0,
+    )
+    scores = {"small": 0.35, "large": 0.60}
+    objects = {"small": obj_small, "large": obj_large}
+
+    # Under low memory pressure: alpha is low (0.10), large object retains higher density
+    sys_low = SystemState(
+        cache_capacity_bytes=100000,
+        cache_usage_bytes=100,
+        object_count=2,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    evicted_low = policy.select_evictions(scores, objects, 210, system=sys_low)
+    assert evicted_low == ["small"]
+    assert policy.last_value_densities is not None
+    assert policy.last_value_densities["small"] < policy.last_value_densities["large"]
+
+    # Under high memory pressure: alpha is high (0.60), large object density collapses
+    sys_high = SystemState(
+        cache_capacity_bytes=220,
+        cache_usage_bytes=220,
+        object_count=2,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    evicted_high = policy.select_evictions(scores, objects, 210, system=sys_high)
+    assert evicted_high == ["large"]
+    assert policy.last_value_densities is not None
+    assert policy.last_value_densities["large"] < policy.last_value_densities["small"]
+
+
+def test_small_high_value_objects_protected_over_large_low_value_objects(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """Small high-utility objects have vastly higher value density than large low-utility objects."""
+    small_high = CacheObject(
+        key="small_high",
+        size_bytes=50,
+        access_count=10,
+        last_accessed=now,
+        retrieval_cost_ms=10.0,
+    )
+    large_low = CacheObject(
+        key="large_low",
+        size_bytes=500,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=10.0,
+    )
+    scores = {"small_high": 0.85, "large_low": 0.15}
+    objects = {"small_high": small_high, "large_low": large_low}
+
+    # Usage = 550, target = 500 -> bytes_to_free = 50
+    evictions = policy.select_evictions(scores, objects, 500)
+    assert evictions == ["large_low"]
+    assert policy.last_value_densities is not None
+    assert (
+        policy.last_value_densities["large_low"]
+        < policy.last_value_densities["small_high"]
+    )
+
+
+def test_higher_retrieval_cost_protects_object_under_latency_pressure(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """High backend latency boosts retention value for costly-to-retrieve objects."""
+    obj_cheap = CacheObject(
+        key="cheap",
+        size_bytes=100,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=5.0,
+    )
+    obj_costly = CacheObject(
+        key="costly",
+        size_bytes=100,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=200.0,
+    )
+    scores = {"cheap": 0.50, "costly": 0.48}
+    objects = {"cheap": obj_cheap, "costly": obj_costly}
+
+    # Under low backend latency (5ms), costly is evicted because raw score is lower
+    wl_low = WorkloadState(
+        request_rate=100,
+        hit_rate=0.5,
+        miss_rate=0.5,
+        backend_latency_ms=5.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    evicted_low = policy.select_evictions(scores, objects, 100, workload=wl_low)
+    assert evicted_low == ["costly"]
+    assert policy.last_value_densities is not None
+    assert policy.last_value_densities["costly"] < policy.last_value_densities["cheap"]
+
+    # Under high backend latency (500ms), costly receives retention boost and is protected
+    wl_high = WorkloadState(
+        request_rate=100,
+        hit_rate=0.5,
+        miss_rate=0.5,
+        backend_latency_ms=500.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    evicted_high = policy.select_evictions(scores, objects, 100, workload=wl_high)
+    assert evicted_high == ["cheap"]
+    assert policy.last_value_densities is not None
+    assert policy.last_value_densities["cheap"] < policy.last_value_densities["costly"]
+
+
+def test_frequency_recency_and_popularity_protect_via_dynamic_scoring(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """Objects with higher access activity receive higher scores and survive eviction."""
+    extractor = FeatureExtractor()
+    scorer = AdaptiveScorer()
+
+    item_active = CacheObject(
+        key="active",
+        size_bytes=100,
+        access_count=50,
+        last_accessed=now - timedelta(seconds=2),
+        retrieval_cost_ms=10.0,
+    )
+    item_dormant = CacheObject(
+        key="dormant",
+        size_bytes=100,
+        access_count=1,
+        last_accessed=now - timedelta(seconds=600),
+        retrieval_cost_ms=10.0,
+    )
+    objects = {"active": item_active, "dormant": item_dormant}
+    wl = WorkloadState(
+        request_rate=100.0,
+        hit_rate=0.5,
+        miss_rate=0.5,
+        backend_latency_ms=30.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    sys = SystemState(
+        cache_capacity_bytes=1000,
+        cache_usage_bytes=200,
+        object_count=2,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+
+    features = extractor.extract(list(objects.values()), now=now, window_seconds=60.0)
+    scores = scorer.score(features, WorkloadType.STEADY, workload=wl, system=sys)
+    assert scores["active"] > scores["dormant"]
+
+    evictions = policy.select_evictions(scores, objects, 100, workload=wl, system=sys)
+    assert evictions == ["dormant"]
+    assert policy.last_value_densities is not None
+    assert (
+        policy.last_value_densities["dormant"] < policy.last_value_densities["active"]
+    )
+
+
+def test_changing_runtime_telemetry_changes_eviction_ranking(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """Changing workload latency and memory pressure flips candidate eviction order."""
+    obj_a = CacheObject(
+        key="item_a",
+        size_bytes=50,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=5.0,
+    )
+    obj_b = CacheObject(
+        key="item_b",
+        size_bytes=50,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=250.0,
+    )
+    objects = {"item_a": obj_a, "item_b": obj_b}
+    scores = {"item_a": 0.45, "item_b": 0.44}
+
+    # Condition 1: Low latency (fast backend) -> item_b evicted first
+    wl_fast = WorkloadState(
+        request_rate=50.0,
+        hit_rate=0.6,
+        miss_rate=0.4,
+        backend_latency_ms=2.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    ev_cond1 = policy.select_evictions(scores, objects, 50, workload=wl_fast)
+    assert ev_cond1 == ["item_b"]
+
+    # Condition 2: High latency (stressed backend) -> item_a evicted first
+    wl_slow = WorkloadState(
+        request_rate=50.0,
+        hit_rate=0.6,
+        miss_rate=0.4,
+        backend_latency_ms=400.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    ev_cond2 = policy.select_evictions(scores, objects, 50, workload=wl_slow)
+    assert ev_cond2 == ["item_a"]
+
+
+def test_zero_size_object_handled_without_division_by_zero(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """Zero-sized objects are assigned effective size 1 and handled safely."""
+    obj_zero = CacheObject(
+        key="zero_size",
+        size_bytes=0,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=10.0,
+    )
+    obj_normal = CacheObject(
+        key="normal",
+        size_bytes=100,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=10.0,
+    )
+    scores = {"zero_size": 0.05, "normal": 0.80}
+    objects = {"zero_size": obj_zero, "normal": obj_normal}
+
+    # Target = 50 requires freeing 50 bytes. zero_size alone frees 0 bytes, so both are selected.
+    evictions = policy.select_evictions(scores, objects, 50)
+    assert evictions[0] == "zero_size"
+    assert policy.last_value_densities is not None
+    assert policy.last_value_densities["zero_size"] == pytest.approx(0.05, rel=1e-3)
+
+
+def test_cost_model_custom_integration_and_value_density_calculation(
+    now: datetime,
+) -> None:
+    """EvictionPolicy integrates with CostModel and supports custom cost model override."""
+    custom_cost_model = CostModel()
+    custom_policy = EvictionPolicy(cost_model=custom_cost_model)
+    assert custom_policy.cost_model is custom_cost_model
+
+    objects = {
+        "item_x": CacheObject(
+            key="item_x",
+            size_bytes=200,
+            access_count=1,
+            last_accessed=now,
+            retrieval_cost_ms=10.0,
+        ),
+        "item_y": CacheObject(
+            key="item_y",
+            size_bytes=400,
+            access_count=1,
+            last_accessed=now,
+            retrieval_cost_ms=10.0,
+        ),
+    }
+    scores = {"item_x": 0.60, "item_y": 0.60}
+
+    # Eviction with explicit cost model parameter
+    evictions = custom_policy.select_evictions(
+        scores=scores,
+        objects=objects,
+        target_capacity_bytes=300,
+        cost_model=custom_cost_model,
+    )
+    assert custom_policy.last_value_densities is not None
+    # Both have equal scores and retrieval costs, but item_y is larger, so item_y has lower value density
+    assert (
+        custom_policy.last_value_densities["item_y"]
+        < custom_policy.last_value_densities["item_x"]
+    )
+    assert evictions == ["item_y"]
+
+
+def test_decision_engine_eviction_metadata_presence_and_clearing(
+    now: datetime,
+) -> None:
+    """DecisionEngine populates eviction_value_density during evictions and clears it when none occur."""
+    engine = DecisionEngine()
+    objs = {
+        "a": CacheObject(
+            key="a",
+            size_bytes=600,
+            access_count=1,
+            last_accessed=now,
+            retrieval_cost_ms=5.0,
+        ),
+        "b": CacheObject(
+            key="b",
+            size_bytes=600,
+            access_count=1,
+            last_accessed=now,
+            retrieval_cost_ms=200.0,
+        ),
+    }
+    wl = WorkloadState(
+        request_rate=100.0,
+        hit_rate=0.5,
+        miss_rate=0.5,
+        backend_latency_ms=30.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    sys = SystemState(
+        cache_capacity_bytes=1000,
+        cache_usage_bytes=1200,
+        object_count=2,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+
+    # Run 1: Capacity pressure causes eviction
+    dec1 = engine.decide(
+        objects=objs,
+        workload=wl,
+        system=sys,
+        min_capacity_bytes=100,
+        max_capacity_bytes=1000,
+        now=now,
+    )
+    assert len(dec1.eviction_keys) > 0
+    assert "eviction_value_density" in dec1.metadata
+    assert "a" in dec1.metadata["eviction_value_density"]
+    assert "b" in dec1.metadata["eviction_value_density"]
+
+    # Run 2: No capacity pressure (recommended capacity 2000 >= usage 1200)
+    sys_room = SystemState(
+        cache_capacity_bytes=2000,
+        cache_usage_bytes=1200,
+        object_count=2,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    dec2 = engine.decide(
+        objects=objs,
+        workload=wl,
+        system=sys_room,
+        min_capacity_bytes=1000,
+        max_capacity_bytes=2000,
+        now=now,
+    )
+    assert dec2.eviction_keys == []
+    assert "eviction_value_density" not in dec2.metadata
+
+
+# ---------------------------------------------------------------------------
+# Step 2.1: Double-Penalty Hardening & Multi-Factor Dominance Tests
+# ---------------------------------------------------------------------------
+
+
+def test_large_high_value_object_survives_against_small_low_value_object_under_high_memory_pressure(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """A 100x larger object with high utility survives against a small low-utility object."""
+    obj_tiny_low = CacheObject(
+        key="tiny_low",
+        size_bytes=200,
+        access_count=1,
+        last_accessed=now - timedelta(seconds=100),
+        retrieval_cost_ms=5.0,
+    )
+    obj_large_high = CacheObject(
+        key="large_high",
+        size_bytes=20000,
+        access_count=30,
+        last_accessed=now - timedelta(seconds=2),
+        retrieval_cost_ms=100.0,
+    )
+    # Utility scores: large_high has ~10x higher retention utility than tiny_low
+    scores = {"tiny_low": 0.08, "large_high": 0.85}
+    objects = {"tiny_low": obj_tiny_low, "large_high": obj_large_high}
+
+    # Severe memory pressure: 100% full cache
+    sys_full = SystemState(
+        cache_capacity_bytes=20200,
+        cache_usage_bytes=20200,
+        object_count=2,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    wl = WorkloadState(
+        request_rate=100.0,
+        hit_rate=0.5,
+        miss_rate=0.5,
+        backend_latency_ms=40.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+
+    evictions = policy.select_evictions(
+        scores, objects, 20000, system=sys_full, workload=wl
+    )
+    assert evictions == ["tiny_low"]
+    assert policy.last_value_densities is not None
+    assert (
+        policy.last_value_densities["large_high"]
+        > policy.last_value_densities["tiny_low"]
+    )
+
+
+def test_size_penalty_monotonically_increases_with_memory_pressure(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """Density ratio between small and large objects increases monotonically with memory pressure."""
+    obj_s = CacheObject(
+        key="s",
+        size_bytes=100,
+        access_count=5,
+        last_accessed=now,
+        retrieval_cost_ms=10.0,
+    )
+    obj_l = CacheObject(
+        key="l",
+        size_bytes=10000,
+        access_count=5,
+        last_accessed=now,
+        retrieval_cost_ms=10.0,
+    )
+    scores = {"s": 0.50, "l": 0.50}
+    objects = {"s": obj_s, "l": obj_l}
+    wl = WorkloadState(
+        request_rate=100.0,
+        hit_rate=0.5,
+        miss_rate=0.5,
+        backend_latency_ms=30.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+
+    ratios: list[float] = []
+    for pressure in [0.10, 0.40, 0.70, 0.95]:
+        sys_p = SystemState(
+            cache_capacity_bytes=int(10100 / pressure),
+            cache_usage_bytes=10100,
+            object_count=2,
+            window_seconds=60.0,
+            timestamp=now,
+        )
+        policy.select_evictions(scores, objects, 10000, system=sys_p, workload=wl)
+        assert policy.last_value_densities is not None
+        ratio = policy.last_value_densities["s"] / policy.last_value_densities["l"]
+        ratios.append(ratio)
+
+    # Monotonicity check: size matters strictly more as cache fills
+    assert ratios[0] < ratios[1] < ratios[2] < ratios[3]
+
+
+def test_retrieval_cost_protection_bounded_and_non_punitive(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """Cheap objects receive bounded penalties (<=15%) even under extreme backend latency."""
+    obj_cheap = CacheObject(
+        key="c_cheap",
+        size_bytes=100,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=1.0,
+    )
+    obj_costly = CacheObject(
+        key="c_costly",
+        size_bytes=100,
+        access_count=1,
+        last_accessed=now,
+        retrieval_cost_ms=1000.0,
+    )
+    scores = {"c_cheap": 0.50, "c_costly": 0.50}
+    objects = {"c_cheap": obj_cheap, "c_costly": obj_costly}
+
+    # Extreme latency pressure: 10,000 ms backend latency
+    wl_extreme = WorkloadState(
+        request_rate=100.0,
+        hit_rate=0.5,
+        miss_rate=0.5,
+        backend_latency_ms=10000.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    policy.select_evictions(scores, objects, 100, workload=wl_extreme)
+    assert policy.last_retention_values is not None
+
+    # Cheap object retention value is not overly penalized (floor >= score * 0.84)
+    assert policy.last_retention_values["c_cheap"] >= 0.50 * 0.84
+    # Expensive object retention value is boosted (ceiling <= score * 1.16)
+    assert policy.last_retention_values["c_costly"] <= 0.50 * 1.16
+
+
+def test_no_single_factor_completely_dominates_across_normal_conditions(
+    policy: EvictionPolicy, now: datetime
+) -> None:
+    """Verifies that frequency, recency, retrieval cost, and size all interact without single-factor domination."""
+    extractor = FeatureExtractor()
+    scorer = AdaptiveScorer()
+
+    candidates = {
+        "tiny_stale": CacheObject(
+            key="tiny_stale",
+            size_bytes=100,
+            access_count=1,
+            last_accessed=now - timedelta(seconds=500),
+            retrieval_cost_ms=5.0,
+        ),
+        "small_warm": CacheObject(
+            key="small_warm",
+            size_bytes=1000,
+            access_count=10,
+            last_accessed=now - timedelta(seconds=20),
+            retrieval_cost_ms=15.0,
+        ),
+        "large_hot": CacheObject(
+            key="large_hot",
+            size_bytes=20000,
+            access_count=45,
+            last_accessed=now - timedelta(seconds=2),
+            retrieval_cost_ms=100.0,
+        ),
+        "large_cold": CacheObject(
+            key="large_cold",
+            size_bytes=20000,
+            access_count=2,
+            last_accessed=now - timedelta(seconds=400),
+            retrieval_cost_ms=10.0,
+        ),
+    }
+    total_bytes = sum(o.size_bytes for o in candidates.values())
+    sys_60 = SystemState(
+        cache_capacity_bytes=int(total_bytes / 0.60),
+        cache_usage_bytes=total_bytes,
+        object_count=4,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+    wl = WorkloadState(
+        request_rate=100.0,
+        hit_rate=0.6,
+        miss_rate=0.4,
+        backend_latency_ms=40.0,
+        window_seconds=60.0,
+        timestamp=now,
+    )
+
+    features = extractor.extract(
+        list(candidates.values()), now=now, window_seconds=60.0
+    )
+    scores = scorer.score(features, WorkloadType.STEADY, workload=wl, system=sys_60)
+
+    # Evict 5000 bytes: large_cold is evicted first, large_hot is preserved
+    evicted = policy.select_evictions(
+        scores, candidates, total_bytes - 5000, system=sys_60, workload=wl
+    )
+    assert "large_cold" in evicted
+    assert "large_hot" not in evicted
+    assert policy.last_value_densities is not None
+    # large_hot density exceeds both large_cold and tiny_stale
+    assert (
+        policy.last_value_densities["large_hot"]
+        > policy.last_value_densities["large_cold"]
+    )
+    assert (
+        policy.last_value_densities["large_hot"]
+        > policy.last_value_densities["tiny_stale"]
+    )

@@ -38,6 +38,20 @@ class CacheManager:
             del self._metadata[key]
         return self._store.delete(key)
 
+    def invalidate(self, key: str) -> bool:
+        """Invalidate a cache key and its associated metadata.
+
+        Reuses delete() to purge the value from the underlying cache store
+        and remove any corresponding in-memory metadata.
+
+        Args:
+            key: The cache key to invalidate.
+
+        Returns:
+            True if the key existed in the store and was deleted, False otherwise.
+        """
+        return self.delete(key)
+
     def exists(self, key: str) -> bool:
         return self._store.exists(key)
 
