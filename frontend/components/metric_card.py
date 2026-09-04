@@ -9,10 +9,21 @@ def render_metric_card(
     tag: str = "",
     delta: str = "",
     delta_color: str = "#10B981",
+    tooltip: str = "",
+    progress_pct: float | None = None,
+    progress_value: float | None = None,
+    progress_color: str | None = None,
     is_floating: bool = False,
 ):
-    """Render a modern technical metric card with high contrast in both themes."""
+    """Render a premium technical metric card with baseline delta and explanatory tooltip."""
     c = get_theme_colors()
+
+    # Normalize progress_pct vs progress_value (accepts 0.0-1.0 or 0-100)
+    effective_progress = progress_pct if progress_pct is not None else progress_value
+    if effective_progress is not None:
+        if 0.0 <= effective_progress <= 1.0:
+            effective_progress = effective_progress * 100.0
+
 
     # Adapt delta color in light mode for maximum legibility
     actual_delta_color = delta_color
@@ -27,27 +38,49 @@ def render_metric_card(
             actual_delta_color = "#7C3AED"
 
     delta_html = (
-        f'<div style="font-size:11.5px;font-weight:600;color:{actual_delta_color};margin-top:4px;">{delta}</div>'
+        f'<div style="font-size:11.5px;font-weight:600;color:{actual_delta_color};margin-top:4px;display:flex;align-items:center;gap:4px;">'
+        f'{delta}</div>'
         if delta
         else ""
     )
+
     tag_html = (
-        f'<span style="font-size:10px;font-weight:700;background:rgba(56,189,248,0.12);color:{c["cyan"]};border:1px solid rgba(56,189,248,0.25);border-radius:4px;padding:2px 6px;letter-spacing:0.5px;">{tag}</span>'
+        f'<span style="font-size:9.5px;font-weight:700;background:rgba(56,189,248,0.12);color:{c["cyan"]};border:1px solid rgba(56,189,248,0.25);border-radius:4px;padding:2px 6px;letter-spacing:0.5px;text-transform:uppercase;">{tag}</span>'
         if tag
         else ""
     )
-    floating_cls = "floating-element" if is_floating else ""
+
+    tooltip_html = (
+        f'<span title="{tooltip}" style="cursor:help;font-size:11px;color:{c["text_subtle"]};margin-left:4px;">ⓘ</span>'
+        if tooltip
+        else ""
+    )
+
+    bar_html = ""
+    if effective_progress is not None:
+        p_pct = min(100.0, max(0.0, float(effective_progress)))
+        p_col = progress_color or c["cyan"]
+        bar_bg = "#1E293B" if c["is_dark"] else "#E2E8F0"
+        bar_html = (
+            f'<div style="background:{bar_bg};height:4px;border-radius:2px;overflow:hidden;margin-top:8px;">'
+            f'<div style="background:{p_col};width:{p_pct}%;height:100%;border-radius:2px;"></div>'
+            f'</div>'
+        )
 
     html = (
-        f'<div class="hero-card {floating_cls}" style="padding:16px 18px;min-height:125px;display:flex;flex-direction:column;justify-content:space-between;">'
+        f'<div class="hero-card" style="padding:16px 18px;min-height:130px;display:flex;flex-direction:column;justify-content:space-between;">'
         f'<div style="display:flex;justify-content:space-between;align-items:center;">'
-        f'<span style="color:{c["text_muted"]};font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;">{title}</span>'
+        f'<div style="display:flex;align-items:center;">'
+        f'<span style="color:{c["text_muted"]};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;">{title}</span>'
+        f'{tooltip_html}'
+        f'</div>'
         f'{tag_html}'
         f'</div>'
         f'<div>'
-        f'<div style="font-size:26px;font-weight:800;color:{c["text"]};margin-top:6px;letter-spacing:-0.5px;">{value}</div>'
+        f'<div style="font-size:26px;font-weight:800;color:{c["text"]};margin-top:6px;letter-spacing:-0.6px;line-height:1.1;">{value}</div>'
         f'{delta_html}'
-        f'<div style="color:{c["text_subtle"]};font-size:11.5px;margin-top:3px;font-weight:500;">{subtitle}</div>'
+        f'{bar_html}'
+        f'<div style="color:{c["text_subtle"]};font-size:11px;margin-top:4px;font-weight:500;">{subtitle}</div>'
         f'</div>'
         f'</div>'
     )

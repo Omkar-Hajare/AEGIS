@@ -6,3 +6,4 @@ fastReruns = true
 
 [client]
 toolbarMode = "minimal"
+showSidebarNavigation = false
