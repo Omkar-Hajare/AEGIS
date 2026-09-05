@@ -1,0 +1,28 @@
+# ==============================================================================
+# VH26-Satyagrah: Adaptive Cache System
+# Root Dependency Specification
+# ==============================================================================
+
+# Core Backend API & Adaptive Engine
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# Caching, Database & Persistence Layer
+redis>=5.0.0
+SQLAlchemy>=2.0.0
+psycopg[binary]>=3.1.0
+
+# Frontend Dashboard (Streamlit)
+streamlit>=1.30.0
+pandas>=2.0.0
+plotly>=5.18.0
+requests>=2.31.0
+
+# Testing, Simulation & Code Quality
+pytest>=8.0.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0
+ruff>=0.1.0

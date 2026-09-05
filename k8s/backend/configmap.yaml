@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  labels:
+    app: backend
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/part-of: adaptive-cache
+data:
+  APP_NAME: "Adaptive Cache System"
+  APP_VERSION: "0.1.0"
+  CACHE_BACKEND: "redis"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "adaptive_cache"
+  DATABASE_HOST: "postgres"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "adaptive_cache"
+  DATABASE_USER: "postgres"
+  DATABASE_PASSWORD: "postgres"

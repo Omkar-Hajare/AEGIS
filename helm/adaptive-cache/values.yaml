@@ -1,0 +1,102 @@
+# Default values for adaptive-cache.
+
+backend:
+  replicaCount: 2
+  image:
+    repository: hackathon-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    appName: "Adaptive Cache System"
+    appVersion: "0.1.0"
+    cacheBackend: "redis"
+    redisHost: "redis"
+    redisPort: "6379"
+    redisDb: "0"
+    postgresHost: "postgres"
+    postgresPort: "5432"
+    postgresDb: "adaptive_cache"
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: hackathon-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8501
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  backendUrl: "http://backend:8000"
+  server:
+    port: "8501"
+    address: "0.0.0.0"
+    headless: "true"
+    gatherUsageStats: "false"
+
+redis:
+  image:
+    repository: redis
+    tag: 7-alpine
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+postgres:
+  image:
+    repository: postgres
+    tag: 16-alpine
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5432
+  auth:
+    user: postgres
+    password: postgres
+    database: adaptive_cache
+  persistence:
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 50
+
+serviceMonitor:
+  enabled: true
+  interval: 5s
+  scrapeTimeout: 4s
+  labels:
+    release: adaptive-monitoring
