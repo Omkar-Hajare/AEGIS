@@ -27,11 +27,6 @@ def render_cache_objects_view():
     cache_response = api_client.get_cache_objects()
     is_live = cache_response.get("is_live", False)
     fetched_objects = [dict(item) for item in cache_response.get("objects", [])]
-
-    if "cache_operator_overrides" not in st.session_state:
-        st.session_state["cache_operator_overrides"] = {}
-    operator_overrides = st.session_state["cache_operator_overrides"]
-
     raw_objects = []
     for item in fetched_objects:
         key = item.get("key", "")
@@ -90,10 +85,6 @@ def render_cache_objects_view():
                 item["rationale"] = "Background refresh heuristic: Object approaching expiration with active access patterns."
             else:
                 item["rationale"] = "Low access frequency observed relative to memory footprint; heuristic flags for memory recycling under pressure."
-
-        # Apply simulated operator overrides if executed in UI session
-        if key in operator_overrides:
-            item.update(operator_overrides[key])
 
         raw_objects.append(item)
 
@@ -192,7 +183,7 @@ def render_cache_objects_view():
     protected_count = (
         len(
             df_all[
-                df_all["status"].str.contains("Protected|Refreshed", na=False)
+                df_all["status"].str.contains("Protected", na=False)
             ]
         )
         if not df_all.empty
@@ -449,7 +440,7 @@ def render_cache_objects_view():
                 if item:
                     d_badge = get_decision_badge_html(item["decision"])
                     s_type = (
-                        "protected" if "Protected" in item.get("status", "") or "Locked" in item.get("status", "")
+                        "protected" if "Protected" in item.get("status", "")
                         else ("hot" if "Hot" in item.get("status", "")
                         else ("danger" if "Evict" in item.get("status", "") or "Risk" in item.get("status", "")
                         else "active"))
@@ -506,55 +497,3 @@ def render_cache_objects_view():
                         f'</div>'
                     )
                     st.markdown(inspector_card_html, unsafe_allow_html=True)
-
-                    # Diagnostic Interactive Action Buttons (Clearly Marked as Demo Simulation)
-                    st.markdown(
-                        f'<div style="margin-top: 16px; margin-bottom: 4px;"><span style="font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: {c["text_muted"]};">SIMULATED OPERATOR ACTIONS (UI DEMO ONLY):</span></div>'
-                        f'<p style="font-size: 11px; color: {c["text_subtle"]}; margin: 0 0 10px 0; line-height: 1.4;">'
-                        f'These buttons demonstrate what-if UI overrides in local session state. They do not mutate backend CacheManager RAM.'
-                        f'</p>',
-                        unsafe_allow_html=True,
-                    )
-                    act1, act2, act3 = st.columns(3)
-                    with act1:
-                        if st.button("⚡ Sim Refresh", key="btn_refresh", width="stretch", help="Demo simulation only: updates local session state without mutating backend cache"):
-                            item["decision"] = "REFRESH"
-                            item["status"] = "Protected (Refreshed)"
-                            item["utility_score"] = min(1.0, round(float(item["utility_score"]) + 0.15, 2))
-                            item["rationale"] = "Simulated operator override: Marked for background refresh in local UI session (no backend mutation)."
-                            st.session_state["cache_operator_overrides"][item["key"]] = {
-                                "decision": item["decision"],
-                                "status": item["status"],
-                                "utility_score": item["utility_score"],
-                                "rationale": item["rationale"],
-                            }
-                            st.toast(f"⚡ [SIMULATED] Flagged {item['key']} for refresh in session UI", icon="⚡")
-                            st.rerun()
-                    with act2:
-                        if st.button("🔒 Sim Lock", key="btn_lock", width="stretch", help="Demo simulation only: updates local session state without mutating backend cache"):
-                            item["decision"] = "RETAIN"
-                            item["status"] = "Protected (Locked)"
-                            item["utility_score"] = max(float(item["utility_score"]), 0.95)
-                            item["rationale"] = "Simulated operator override: Marked as locked in local UI session (no backend mutation)."
-                            st.session_state["cache_operator_overrides"][item["key"]] = {
-                                "decision": item["decision"],
-                                "status": item["status"],
-                                "utility_score": item["utility_score"],
-                                "rationale": item["rationale"],
-                            }
-                            st.toast(f"🔒 [SIMULATED] Flagged {item['key']} as locked in session UI", icon="🔒")
-                            st.rerun()
-                    with act3:
-                        if st.button("🗑️ Sim Evict", key="btn_evict", width="stretch", help="Demo simulation only: updates local session state without mutating backend cache"):
-                            item["decision"] = "EVICT"
-                            item["status"] = "Eviction Candidate"
-                            item["utility_score"] = max(0.05, round(float(item["utility_score"]) - 0.45, 2))
-                            item["rationale"] = "Simulated operator override: Marked for eviction in local UI session (no backend mutation)."
-                            st.session_state["cache_operator_overrides"][item["key"]] = {
-                                "decision": item["decision"],
-                                "status": item["status"],
-                                "utility_score": item["utility_score"],
-                                "rationale": item["rationale"],
-                            }
-                            st.toast(f"🗑️ [SIMULATED] Flagged {item['key']} for eviction in session UI", icon="🗑️")
-                            st.rerun()

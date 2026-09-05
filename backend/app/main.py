@@ -38,6 +38,7 @@ def root():
         "endpoints": {
             "health": "/health",
             "runtime_decision": "/adaptive/runtime-decision",
+            "adaptive_decisions": "/adaptive/decisions",
             "decision": "/adaptive/decision",
             "telemetry_observation": "/telemetry/observation",
             "telemetry_workload": "/telemetry/workload",

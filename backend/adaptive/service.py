@@ -21,9 +21,17 @@ if _backend_dir not in sys.path:
 
 try:
     from backend.adaptive.engine.decision_engine import DecisionEngine
+    from backend.adaptive.history import (
+        DecisionHistory,
+        runtime_decision_history,
+    )
 except ImportError:
     from adaptive.engine.decision_engine import (  # type: ignore[no-redef]
         DecisionEngine,
+    )
+    from adaptive.history import (  # type: ignore[no-redef]
+        DecisionHistory,
+        runtime_decision_history,
     )
 
 try:
@@ -177,6 +185,7 @@ class AdaptiveService:
         cache_manager: CacheManager | None = None,
         telemetry_collector: TelemetryCollector | None = None,
         decision_engine: DecisionEngine | None = None,
+        decision_history: DecisionHistory | None = None,
     ) -> None:
         """Initialize the AdaptiveService with optional injected components."""
         self.cache_manager = (
@@ -190,6 +199,15 @@ class AdaptiveService:
         self.decision_engine = (
             decision_engine if decision_engine is not None else DecisionEngine()
         )
+        self.decision_history = (
+            decision_history
+            if decision_history is not None
+            else runtime_decision_history
+        )
+
+    def record_decision(self, decision: Decision) -> None:
+        """Record a produced Decision contract into the bounded history."""
+        self.decision_history.record(decision)
 
     def decide(
         self,

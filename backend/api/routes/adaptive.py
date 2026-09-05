@@ -15,10 +15,15 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 try:
     from adaptive.engine.decision_engine import DecisionEngine
+    from adaptive.history import DecisionHistory, runtime_decision_history
     from adaptive.service import AdaptiveService
 except ImportError:
     from backend.adaptive.engine.decision_engine import (
         DecisionEngine,  # type: ignore[no-redef]
+    )
+    from backend.adaptive.history import (
+        DecisionHistory,  # type: ignore[no-redef]
+        runtime_decision_history,  # type: ignore[no-redef]
     )
     from backend.adaptive.service import (
         AdaptiveService,  # type: ignore[no-redef]
@@ -29,6 +34,13 @@ try:
 except ImportError:
     from backend.api.routes.data import (
         cache_manager as runtime_cache_manager,  # type: ignore[no-redef]
+    )
+
+try:
+    from api.schemas.adaptive import DecisionHistoryResponse
+except ImportError:
+    from backend.api.schemas.adaptive import (  # type: ignore[no-redef]
+        DecisionHistoryResponse,
     )
 
 try:
@@ -78,16 +90,23 @@ def get_runtime_telemetry_collector() -> TelemetryCollector:
     return runtime_telemetry_collector
 
 
+def get_decision_history() -> DecisionHistory:
+    """Dependency provider returning the shared runtime DecisionHistory."""
+    return runtime_decision_history
+
+
 def get_adaptive_service(
     cache_mgr: CacheManager = Depends(get_runtime_cache_manager),  # noqa: B008
     collector: TelemetryCollector = Depends(get_runtime_telemetry_collector),  # noqa: B008
     engine: DecisionEngine = Depends(get_decision_engine),  # noqa: B008
+    history: DecisionHistory = Depends(get_decision_history),  # noqa: B008
 ) -> AdaptiveService:
     """Dependency provider for AdaptiveService wired with shared runtime state."""
     return AdaptiveService(
         cache_manager=cache_mgr,
         telemetry_collector=collector,
         decision_engine=engine,
+        decision_history=history,
     )
 
 
@@ -215,6 +234,7 @@ def get_runtime_decision(
     now: datetime | None = None,
     decision_id: str | None = None,
     service: AdaptiveService = Depends(get_adaptive_service),  # noqa: B008
+    history: DecisionHistory = Depends(get_decision_history),  # noqa: B008
 ) -> Decision:
     """Retrieve current adaptive cache decision using live runtime telemetry and cache state."""
     if min_capacity_bytes <= 0:
@@ -239,7 +259,7 @@ def get_runtime_decision(
         )
 
     try:
-        return service.decide(
+        decision = service.decide(
             now=now,
             min_capacity_bytes=min_capacity_bytes,
             max_capacity_bytes=max_capacity_bytes,
@@ -247,8 +267,27 @@ def get_runtime_decision(
             decision_id=decision_id,
             capacity_mode=capacity_mode,
         )
+        history.record(decision)
+        return decision
     except (ValueError, TypeError) as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
+
+
+@router.get(
+    "/decisions",
+    response_model=DecisionHistoryResponse,
+    summary="Get Recent Adaptive Decisions",
+    description="Return recent adaptive Decision contract objects recorded from runtime evaluations, newest first.",
+)
+def get_adaptive_decisions(
+    limit: int = 50,
+    history: DecisionHistory = Depends(get_decision_history),  # noqa: B008
+) -> DecisionHistoryResponse:
+    """Return recent adaptive decisions, newest first."""
+    if limit <= 0:
+        return DecisionHistoryResponse(decisions=[], count=0)
+    decisions = history.get_recent(limit=limit)
+    return DecisionHistoryResponse(decisions=decisions, count=len(decisions))

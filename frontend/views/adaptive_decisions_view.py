@@ -6,6 +6,7 @@ from frontend.components.styles import get_theme_colors
 from frontend.mocks import data as mock_data
 from frontend.services.api_client import (
     get_cache_objects,
+    get_decision_history,
     get_runtime_decision,
 )
 from frontend.services.telemetry_service import (
@@ -416,84 +417,145 @@ def render_adaptive_decisions_view():
     )
 
     # ==================================================================
-    # DECISION AUDIT LOG TABLE (DEMO — no history endpoint)
+    # DECISION AUDIT LOG TABLE (LIVE / OFFLINE FALLBACK)
     # ==================================================================
+    history_response = get_decision_history()
+    history_is_live = history_response.get("is_live", False)
+    history_decisions = history_response.get("decisions", [])
+
+    if history_is_live:
+        audit_badge_color = c["emerald"]
+        audit_badge_text = f"⚡ LIVE — GET /adaptive/decisions ({len(history_decisions)} recorded)"
+    else:
+        audit_badge_color = c["amber"]
+        audit_badge_text = "⚠️ DEMO FALLBACK — backend offline"
+
     st.markdown(
         f"""<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
                 Decision Audit Log
             </h3>
-            <span style="font-size: 11px; font-weight: 700; color: {c['amber']};">⚠️ DEMO — static trace (no history endpoint)</span>
+            <span style="font-size: 11px; font-weight: 700; color: {audit_badge_color};">{audit_badge_text}</span>
         </div>""",
         unsafe_allow_html=True,
     )
 
-    audit_records = [
-        {
-            "Timestamp": "15:45:15",
-            "Cycle ID": "EV-9942",
-            "Target Key": "media:thumb:banner_hero_v3",
-            "Action": "EVICT",
-            "Utility Score": "0.14",
-            "Memory Freed": "2.4 MB",
-            "Cost Impact": "Saved $0.002, 8ms latency penalty",
-            "Status": "Executed",
-        },
-        {
-            "Timestamp": "15:45:18",
-            "Cycle ID": "RF-1049",
-            "Target Key": "pricing:dynamic:surge:loc_14",
-            "Action": "REFRESH",
-            "Utility Score": "0.89",
-            "Memory Freed": "N/A (Refreshed)",
-            "Cost Impact": "Prevented stampede latency (82ms saved)",
-            "Status": "Dispatched",
-        },
-        {
-            "Timestamp": "15:45:21",
-            "Cycle ID": "CAP-102",
-            "Target Key": "SYSTEM_RAM_TIER",
-            "Action": "SCALE_UP",
-            "Utility Score": "N/A",
-            "Memory Freed": "+128 MB Target",
-            "Cost Impact": "Marginal API savings exceed cloud RAM cost",
-            "Status": "Active",
-        },
-        {
-            "Timestamp": "15:42:10",
-            "Cycle ID": "RET-8819",
-            "Target Key": "rec:dnn:feed_v2:user_8819",
-            "Action": "RETAIN",
-            "Utility Score": "0.96",
-            "Memory Freed": "Shielded",
-            "Cost Impact": "Shielded $0.082 model inference",
-            "Status": "Locked in RAM",
-        },
-    ]
+    if history_is_live:
+        audit_records = []
+        for dec in history_decisions:
+            ts = dec.get("timestamp", "")
+            if isinstance(ts, str) and "T" in ts:
+                time_str = ts.split("T")[1][:8]
+            else:
+                time_str = str(ts)[:8] if ts else "—"
 
-    action_filter = st.radio(
-        "Filter Audit Records",
-        ["ALL", "RETAIN", "EVICT", "REFRESH", "SCALE_UP"],
-        horizontal=True,
-        label_visibility="collapsed",
-    )
+            cid = dec.get("decision_id") or "DEC-LIVE"
+            cap_act = str(dec.get("capacity_action", "MAINTAIN")).upper()
+            evictions = dec.get("eviction_keys", [])
+            scores = dec.get("object_scores", {})
+            reason_str = dec.get("reason", "")
+            rec_bytes = dec.get("recommended_capacity_bytes")
+
+            if evictions:
+                act = "EVICT"
+                target = ", ".join(evictions[:2]) + (f" (+{len(evictions)-2})" if len(evictions) > 2 else "")
+                score_val = f"{min(scores.values()):.2f}" if scores else "—"
+                footprint = "Eviction Target"
+            else:
+                act = cap_act
+                target = "SYSTEM_RAM_TIER" if "SCALE" in act else (next(iter(scores.keys())) if scores else "CACHE_METRICS")
+                score_val = f"{max(scores.values()):.2f}" if scores else "N/A"
+                footprint = f"{_bytes_to_mb(rec_bytes)} Target" if rec_bytes else "Stable"
+
+            audit_records.append(
+                {
+                    "Timestamp": time_str,
+                    "Cycle ID": cid,
+                    "Target Key": target,
+                    "Action": act,
+                    "Utility Score": score_val,
+                    "Memory Freed": footprint,
+                    "Cost Impact": reason_str[:70] + ("..." if len(reason_str) > 70 else ""),
+                    "Status": "Recorded",
+                }
+            )
+    else:
+        # Offline fallback mock data
+        audit_records = [
+            {
+                "Timestamp": "15:45:15",
+                "Cycle ID": "EV-9942",
+                "Target Key": "media:thumb:banner_hero_v3",
+                "Action": "EVICT",
+                "Utility Score": "0.14",
+                "Memory Freed": "2.4 MB",
+                "Cost Impact": "Saved $0.002, 8ms latency penalty",
+                "Status": "Executed",
+            },
+            {
+                "Timestamp": "15:45:18",
+                "Cycle ID": "RF-1049",
+                "Target Key": "pricing:dynamic:surge:loc_14",
+                "Action": "REFRESH",
+                "Utility Score": "0.89",
+                "Memory Freed": "N/A (Refreshed)",
+                "Cost Impact": "Prevented stampede latency (82ms saved)",
+                "Status": "Dispatched",
+            },
+            {
+                "Timestamp": "15:45:21",
+                "Cycle ID": "CAP-102",
+                "Target Key": "SYSTEM_RAM_TIER",
+                "Action": "SCALE_UP",
+                "Utility Score": "N/A",
+                "Memory Freed": "+128 MB Target",
+                "Cost Impact": "Marginal API savings exceed cloud RAM cost",
+                "Status": "Active",
+            },
+            {
+                "Timestamp": "15:42:10",
+                "Cycle ID": "RET-8819",
+                "Target Key": "rec:dnn:feed_v2:user_8819",
+                "Action": "RETAIN",
+                "Utility Score": "0.96",
+                "Memory Freed": "Shielded",
+                "Cost Impact": "Shielded $0.082 model inference",
+                "Status": "Locked in RAM",
+            },
+        ]
 
     df_audit = pd.DataFrame(audit_records)
-    if action_filter != "ALL":
-        df_audit = df_audit[df_audit["Action"] == action_filter]
 
-    st.dataframe(
-        df_audit,
-        column_config={
-            "Timestamp": st.column_config.TextColumn("Timestamp", width="small"),
-            "Cycle ID": st.column_config.TextColumn("Cycle ID", width="small"),
-            "Target Key": st.column_config.TextColumn("Target Key", width="medium"),
-            "Action": st.column_config.TextColumn("Verdict", width="small"),
-            "Utility Score": st.column_config.TextColumn("Score", width="small"),
-            "Memory Freed": st.column_config.TextColumn("Footprint Delta", width="small"),
-            "Cost Impact": st.column_config.TextColumn("Cost Avoidance / Impact", width="large"),
-            "Status": st.column_config.TextColumn("Status", width="small"),
-        },
-        width="stretch",
-        hide_index=True,
-    )
+    if history_is_live and df_audit.empty:
+        st.info("No runtime decisions recorded yet in memory. Run requests through the Request Simulator or invoke GET /adaptive/runtime-decision to produce live audit logs.")
+    else:
+        filter_options = ["ALL"]
+        if not df_audit.empty and "Action" in df_audit.columns:
+            present_actions = sorted(df_audit["Action"].unique())
+            filter_options = ["ALL"] + [a for a in present_actions if a != "ALL"]
+
+        action_filter = st.radio(
+            "Filter Audit Records",
+            filter_options,
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+
+        if action_filter != "ALL" and not df_audit.empty:
+            df_audit = df_audit[df_audit["Action"] == action_filter]
+
+        st.dataframe(
+            df_audit,
+            column_config={
+                "Timestamp": st.column_config.TextColumn("Timestamp", width="small"),
+                "Cycle ID": st.column_config.TextColumn("Cycle ID", width="small"),
+                "Target Key": st.column_config.TextColumn("Target Key", width="medium"),
+                "Action": st.column_config.TextColumn("Verdict", width="small"),
+                "Utility Score": st.column_config.TextColumn("Score", width="small"),
+                "Memory Freed": st.column_config.TextColumn("Footprint Delta", width="small"),
+                "Cost Impact": st.column_config.TextColumn("Cost Avoidance / Impact", width="large"),
+                "Status": st.column_config.TextColumn("Status", width="small"),
+            },
+            width="stretch",
+            hide_index=True,
+        )

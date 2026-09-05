@@ -11,12 +11,21 @@ from fastapi import APIRouter, Depends
 try:
     from cache.manager import CacheManager
     from cache.metadata import CacheObjectMetadata
+    from database.connection import get_db
 
-    from api.routes.data import cache_manager as runtime_cache_manager
+    from api.routes.data import (
+        cache_manager as runtime_cache_manager,
+    )
+    from api.routes.data import (
+        invalidate_cached_key,
+    )
     from api.schemas.cache import CacheObjectsResponse
 except ImportError:
     from backend.api.routes.data import (
         cache_manager as runtime_cache_manager,  # type: ignore[no-redef]
+    )
+    from backend.api.routes.data import (
+        invalidate_cached_key,  # type: ignore[no-redef]
     )
     from backend.api.schemas.cache import (
         CacheObjectsResponse,  # type: ignore[no-redef]
@@ -27,6 +36,7 @@ except ImportError:
     from backend.cache.metadata import (
         CacheObjectMetadata,  # type: ignore[no-redef]
     )
+    from backend.database.connection import get_db  # type: ignore[no-redef]
 
 router = APIRouter(prefix="/cache", tags=["cache"])
 
@@ -73,3 +83,13 @@ def get_resident_cache_objects(
         "objects": resident_objects,
         "object_count": len(resident_objects),
     }
+
+
+@router.delete("/objects/{key:path}", summary="Invalidate Cache Object")
+def delete_cache_object(
+    key: str,
+    db: Any = Depends(get_db),  # noqa: B008
+) -> dict[str, Any]:
+    """Invalidate a cache object and remove its persistent metadata."""
+    deleted = invalidate_cached_key(key, db)
+    return {"key": key, "deleted": deleted}

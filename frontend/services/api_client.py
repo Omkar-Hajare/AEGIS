@@ -127,6 +127,26 @@ class ApiClient:
             "object_count": len(fallback),
         }
 
+    def get_decision_history(self, limit: int = 50) -> dict[str, Any]:
+        """Fetch recent adaptive decisions from GET /adaptive/decisions.
+
+        Returns structured dictionary with is_live status, decisions list, and count.
+        If backend is unavailable, falls back gracefully with is_live=False.
+        """
+        endpoint = f"adaptive/decisions?limit={limit}" if limit else "adaptive/decisions"
+        data = self.get(endpoint)
+        if data is not None and isinstance(data, dict) and "decisions" in data:
+            return {
+                "is_live": True,
+                "decisions": data.get("decisions", []),
+                "count": data.get("count", len(data.get("decisions", []))),
+            }
+        return {
+            "is_live": False,
+            "decisions": [],
+            "count": 0,
+        }
+
 
 # Singleton instance for centralized use
 api_client = ApiClient()
@@ -155,6 +175,11 @@ def get_runtime_decision(
         now=now,
         decision_id=decision_id,
     )
+
+
+def get_decision_history(limit: int = 50) -> dict[str, Any]:
+    """Module-level convenience: fetch recent decision history from live backend."""
+    return api_client.get_decision_history(limit=limit)
 
 
 def fetch_resident_cache_objects() -> dict[str, Any]:
