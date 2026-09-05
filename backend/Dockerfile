@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY contracts/ /app/contracts/
 COPY backend/ /app/
 
+# Create symlink so that 'import backend.xyz' resolves correctly alongside flat imports
+RUN ln -s /app /app/backend
+
 # Layer 3: Security - create and switch to unprivileged user
 RUN useradd -m -u 10001 appuser && chown -R appuser:appuser /app
 USER appuser
