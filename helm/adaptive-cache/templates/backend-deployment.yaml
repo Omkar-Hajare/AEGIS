@@ -17,6 +17,11 @@ data:
   POSTGRES_HOST: {{ .Values.backend.env.postgresHost | quote }}
   POSTGRES_PORT: {{ .Values.backend.env.postgresPort | quote }}
   POSTGRES_DB: {{ .Values.backend.env.postgresDb | quote }}
+  DATABASE_HOST: {{ .Values.postgres.auth.host | default .Values.backend.env.postgresHost | quote }}
+  DATABASE_PORT: {{ .Values.postgres.auth.dbPort | default .Values.backend.env.postgresPort | quote }}
+  DATABASE_NAME: {{ .Values.postgres.auth.database | quote }}
+  DATABASE_USER: {{ .Values.postgres.auth.user | quote }}
+  DATABASE_PASSWORD: {{ .Values.postgres.auth.password | quote }}
 ---
 apiVersion: apps/v1
 kind: Deployment
