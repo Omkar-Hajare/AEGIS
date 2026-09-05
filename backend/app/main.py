@@ -2,17 +2,20 @@ import sys
 import time
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
-# Ensure backend directory is in sys.path when imported as backend.app.main
+# Ensure backend directory is in sys.path when imported as backend.app.main.
 _backend_dir = str(Path(__file__).resolve().parent.parent)
+
 if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
 from api.routes.adaptive import router as adaptive_router
+from api.routes.cache import router as cache_router
 from api.routes.data import cache_manager, router as data_router
 from api.routes.telemetry import router as telemetry_router
+
 from metrics.prometheus import (
     BACKEND_LATENCY,
     REQUEST_COUNT,
@@ -29,7 +32,10 @@ app = FastAPI(
 
 
 @app.middleware("http")
-async def prometheus_middleware(request: Request, call_next):
+async def prometheus_middleware(
+    request: Request,
+    call_next,
+):
     """Record HTTP request count and latency for Prometheus."""
     start_time = time.perf_counter()
 
@@ -58,15 +64,44 @@ async def prometheus_middleware(request: Request, call_next):
 @app.get("/metrics", include_in_schema=False)
 async def metrics():
     """Expose Prometheus metrics."""
-    sync_from_telemetry(telemetry_collector, cache_manager)
+    sync_from_telemetry(
+        telemetry_collector,
+        cache_manager,
+    )
+
     return Response(
         content=generate_latest(),
         media_type=CONTENT_TYPE_LATEST,
     )
 
 
+@app.get("/")
+def root():
+    """Root endpoint with service status and endpoint discovery."""
+    return {
+        "status": "ok",
+        "service": "Adaptive Cache System",
+        "version": "0.1.0",
+        "docs_url": "/docs",
+        "endpoints": {
+            "health": "/health",
+            "runtime_decision": "/adaptive/runtime-decision",
+            "adaptive_decisions": "/adaptive/decisions",
+            "decision": "/adaptive/decision",
+            "telemetry_observation": "/telemetry/observation",
+            "telemetry_workload": "/telemetry/workload",
+            "telemetry_system": "/telemetry/system",
+            "telemetry_reset": "/telemetry/window/reset",
+            "product_data": "/data/product/{product_id}",
+            "recommendation_data": "/data/recommendation/{user_id}",
+            "cache_objects": "/cache/objects",
+        },
+    }
+
+
 @app.get("/health")
 async def health():
+    """Health check endpoint."""
     return {
         "status": "ok",
         "service": "Adaptive Cache System",
@@ -75,5 +110,6 @@ async def health():
 
 
 app.include_router(data_router)
-app.include_router(adaptive_router)
+app.include_router(cache_router)
 app.include_router(telemetry_router)
+app.include_router(adaptive_router)

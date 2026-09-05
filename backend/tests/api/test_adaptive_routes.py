@@ -7,11 +7,15 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 from api.routes.adaptive import (
+    DecisionHistory,
     get_adaptive_service,
     get_decision_engine,
+    get_decision_history,
     runtime_cache_manager,
+    runtime_decision_history,
     runtime_telemetry_collector,
 )
+from api.schemas.adaptive import DecisionHistoryResponse
 from app.main import app
 from fastapi.testclient import TestClient
 
@@ -24,6 +28,7 @@ from contracts.schemas import (
 
 class TestAdaptiveRoutes(unittest.TestCase):
     def setUp(self) -> None:
+        runtime_decision_history.clear()
         self.client = TestClient(app)
         self.now = datetime(2026, 9, 5, 12, 0, 0, tzinfo=timezone.utc)
         self.now_iso = self.now.isoformat()
@@ -68,6 +73,7 @@ class TestAdaptiveRoutes(unittest.TestCase):
         for key in list(runtime_cache_manager.get_all_metadata().keys()):
             runtime_cache_manager.delete(key)
         runtime_telemetry_collector.reset()
+        runtime_decision_history.clear()
 
     def test_post_decision_success_with_dict_objects(self) -> None:
         """Verify POST /adaptive/decision succeeds and returns a valid Decision contract."""
@@ -382,6 +388,174 @@ class TestAdaptiveRoutes(unittest.TestCase):
             params={"refresh_after_seconds": -5.0},
         )
         self.assertEqual(response.status_code, 422)
+
+    # ----------------------------------------------------------------------
+    # Decision History Endpoint (GET /adaptive/decisions)
+    # ----------------------------------------------------------------------
+
+    def test_get_adaptive_decisions_empty(self) -> None:
+        """Verify GET /adaptive/decisions returns an empty list when no decisions recorded."""
+        response = self.client.get("/adaptive/decisions")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 0)
+        self.assertEqual(data["decisions"], [])
+
+    def test_get_runtime_decision_records_to_history(self) -> None:
+        """Verify successful GET /adaptive/runtime-decision automatically records into history."""
+        # History starts empty
+        resp_empty = self.client.get("/adaptive/decisions")
+        self.assertEqual(resp_empty.json()["count"], 0)
+
+        # Trigger runtime decision
+        resp_decision = self.client.get(
+            "/adaptive/runtime-decision",
+            params={"decision_id": "test_record_cycle_1"},
+        )
+        self.assertEqual(resp_decision.status_code, 200)
+        dec_data = resp_decision.json()
+        self.assertEqual(dec_data["decision_id"], "test_record_cycle_1")
+
+        # Verify history has 1 decision
+        resp_history = self.client.get("/adaptive/decisions")
+        self.assertEqual(resp_history.status_code, 200)
+        hist_data = resp_history.json()
+        self.assertEqual(hist_data["count"], 1)
+        self.assertEqual(len(hist_data["decisions"]), 1)
+        self.assertEqual(hist_data["decisions"][0]["decision_id"], "test_record_cycle_1")
+
+        # Validate against frozen Decision schema
+        Decision.model_validate(hist_data["decisions"][0])
+
+    def test_adaptive_decisions_newest_first_ordering(self) -> None:
+        """Verify GET /adaptive/decisions returns newest decisions first."""
+        self.client.get("/adaptive/runtime-decision", params={"decision_id": "cycle_alpha"})
+        self.client.get("/adaptive/runtime-decision", params={"decision_id": "cycle_beta"})
+        self.client.get("/adaptive/runtime-decision", params={"decision_id": "cycle_gamma"})
+
+        response = self.client.get("/adaptive/decisions")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 3)
+        ids = [d["decision_id"] for d in data["decisions"]]
+        self.assertEqual(ids, ["cycle_gamma", "cycle_beta", "cycle_alpha"])
+
+    def test_adaptive_decisions_50_limit(self) -> None:
+        """Verify history maintains a strict bounded limit of 50 decisions."""
+        # Inject 55 decisions via runtime history component
+        for i in range(55):
+            d = Decision(
+                decision_id=f"cycle_{i}",
+                timestamp=self.now,
+                capacity_action=CapacityAction.MAINTAIN,
+                recommended_capacity_bytes=1_000_000,
+                object_scores={},
+                eviction_keys=[],
+                reason=f"Bounded limit test {i}",
+            )
+            runtime_decision_history.record(d)
+
+        response = self.client.get("/adaptive/decisions")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 50)
+        self.assertEqual(len(data["decisions"]), 50)
+        # Newest decision is cycle_54
+        self.assertEqual(data["decisions"][0]["decision_id"], "cycle_54")
+        # Oldest kept is cycle_5 (cycles 0-4 dropped)
+        self.assertEqual(data["decisions"][-1]["decision_id"], "cycle_5")
+
+    def test_adaptive_decisions_response_schema(self) -> None:
+        """Verify GET /adaptive/decisions validates against DecisionHistoryResponse."""
+        self.client.get("/adaptive/runtime-decision", params={"decision_id": "schema_test"})
+        response = self.client.get("/adaptive/decisions")
+        self.assertEqual(response.status_code, 200)
+        validated = DecisionHistoryResponse.model_validate(response.json())
+        self.assertEqual(validated.count, 1)
+        self.assertEqual(validated.decisions[0].decision_id, "schema_test")
+
+    def test_get_adaptive_decisions_dependency_injection_override(self) -> None:
+        """Verify get_decision_history can be cleanly overridden via FastAPI dependency injection."""
+        custom_history = DecisionHistory(maxlen=10)
+        custom_decision = Decision(
+            decision_id="injected_history_cycle",
+            timestamp=self.now,
+            capacity_action=CapacityAction.MAINTAIN,
+            recommended_capacity_bytes=5_000_000,
+            object_scores={"override_k": 0.99},
+            eviction_keys=[],
+            reason="Injected history",
+        )
+        custom_history.record(custom_decision)
+
+        app.dependency_overrides[get_decision_history] = lambda: custom_history
+
+        response = self.client.get("/adaptive/decisions")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(data["decisions"][0]["decision_id"], "injected_history_cycle")
+
+    def test_post_decision_does_not_record_to_history(self) -> None:
+        """Verify POST /adaptive/decision does not mutate or append to decision history."""
+        payload = {
+            "objects": self.valid_objects_dict,
+            "workload": self.valid_workload,
+            "system": self.valid_system,
+            "min_capacity_bytes": 1000,
+            "max_capacity_bytes": 10000,
+            "now": self.now_iso,
+        }
+        resp_post = self.client.post("/adaptive/decision", json=payload)
+        self.assertEqual(resp_post.status_code, 200)
+
+        resp_hist = self.client.get("/adaptive/decisions")
+        self.assertEqual(resp_hist.json()["count"], 0)
+
+    def test_runtime_decision_error_does_not_record_to_history(self) -> None:
+        """Verify failed runtime evaluations (422) do not record to history."""
+        response = self.client.get(
+            "/adaptive/runtime-decision",
+            params={"min_capacity_bytes": -1},
+        )
+        self.assertEqual(response.status_code, 422)
+
+        resp_hist = self.client.get("/adaptive/decisions")
+        self.assertEqual(resp_hist.json()["count"], 0)
+
+    def test_frontend_api_client_get_decision_history(self) -> None:
+        """Verify frontend ApiClient get_decision_history handles live and offline scenarios."""
+        from frontend.services.api_client import ApiClient
+
+        # 1. Offline fallback simulation
+        offline_client = ApiClient(base_url="http://127.0.0.1:54321")
+        res_offline = offline_client.get_decision_history()
+        self.assertFalse(res_offline["is_live"])
+        self.assertEqual(res_offline["decisions"], [])
+        self.assertEqual(res_offline["count"], 0)
+
+        # 2. Mocked live response parsing
+        live_client = ApiClient(base_url="http://127.0.0.1:8000")
+        mock_payload = {
+            "decisions": [
+                {
+                    "object_scores": {"k1": 0.8},
+                    "eviction_keys": [],
+                    "capacity_action": "MAINTAIN",
+                    "recommended_capacity_bytes": 1000000,
+                    "reason": "OK",
+                    "decision_id": "client_dec_1",
+                    "timestamp": self.now_iso,
+                    "version": "v1",
+                }
+            ],
+            "count": 1,
+        }
+        with unittest.mock.patch.object(live_client, "get", return_value=mock_payload):
+            res_live = live_client.get_decision_history()
+            self.assertTrue(res_live["is_live"])
+            self.assertEqual(res_live["count"], 1)
+            self.assertEqual(res_live["decisions"][0]["decision_id"], "client_dec_1")
 
 
 if __name__ == "__main__":

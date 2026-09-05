@@ -1,3 +1,4 @@
+from api.schemas.adaptive import DecisionHistoryResponse
 from api.schemas.telemetry import (
     SystemStateResponse,
     TelemetryObservationResponse,
@@ -6,6 +7,7 @@ from api.schemas.telemetry import (
 )
 
 __all__ = [
+    "DecisionHistoryResponse",
     "SystemStateResponse",
     "TelemetryObservationResponse",
     "WindowResetResponse",

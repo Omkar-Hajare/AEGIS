@@ -89,23 +89,20 @@ def get_theme_colors() -> dict:
         }
 
 
-@st.cache_data(ttl=20)
+@st.cache_data(ttl=5)
 def get_backend_status() -> dict:
-    """Check if real FastAPI backend is reachable on localhost:8000; gracefully report demo mode otherwise."""
-    try:
-        import requests
+    """Check backend health via centralized ApiClient."""
+    from frontend.services.api_client import check_health
 
-        resp = requests.get("http://localhost:8000/health", timeout=0.25)
-        if resp.status_code == 200:
-            return {
-                "is_live": True,
-                "status": "ONLINE",
-                "label": "BACKEND: HEALTHY (API v1.0)",
-                "badge_class": "badge-protected",
-                "details": "FastAPI + Redis Tier-1",
-            }
-    except Exception:
-        pass
+    health = check_health()
+    if health.get("is_live"):
+        return {
+            "is_live": True,
+            "status": "ONLINE",
+            "label": f"BACKEND: HEALTHY (API v{health.get('version', '0.1.0')})",
+            "badge_class": "badge-protected",
+            "details": "FastAPI + Redis Tier-1",
+        }
     return {
         "is_live": False,
         "status": "DEMO MODE",
@@ -127,14 +124,10 @@ def apply_global_styles():
             "radial-gradient(circle at 82% 82%, rgba(167, 139, 250, 0.02) 0%, transparent 50%), "
             "radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.01) 0%, transparent 60%)"
         )
-        card_bg = "rgba(255, 255, 255, 0.04)"
         card_bg_hover = "rgba(255, 255, 255, 0.07)"
-        card_border = "rgba(255, 255, 255, 0.10)"
         card_border_hover = "rgba(255, 255, 255, 0.16)"
         card_shadow = "0 8px 32px rgba(0, 0, 0, 0.25)"
         card_shadow_hover = "0 12px 40px rgba(0, 0, 0, 0.35)"
-        sidebar_bg = "#0A0A0B"
-        sidebar_border = "rgba(255, 255, 255, 0.10)"
         hr_color = "rgba(255, 255, 255, 0.08)"
         dock_bg = "rgba(10, 10, 10, 0.72)"
         navbar_bg = "rgba(10, 10, 10, 0.72)"
@@ -157,14 +150,10 @@ def apply_global_styles():
             "radial-gradient(circle at 20% 20%, rgba(0, 0, 0, 0.015) 0%, transparent 40%), "
             "radial-gradient(circle at 80% 80%, rgba(0, 0, 0, 0.01) 0%, transparent 40%)"
         )
-        card_bg = "rgba(255, 255, 255, 0.70)"
         card_bg_hover = "rgba(255, 255, 255, 0.85)"
-        card_border = "rgba(0, 0, 0, 0.08)"
         card_border_hover = "rgba(0, 0, 0, 0.14)"
         card_shadow = "0 4px 20px rgba(0, 0, 0, 0.04)"
         card_shadow_hover = "0 8px 28px rgba(0, 0, 0, 0.08)"
-        sidebar_bg = "#EDEDEF"
-        sidebar_border = "rgba(0, 0, 0, 0.08)"
         hr_color = "rgba(0, 0, 0, 0.08)"
         dock_bg = "rgba(244, 244, 245, 0.85)"
         navbar_bg = "rgba(244, 244, 245, 0.85)"
@@ -181,14 +170,6 @@ def apply_global_styles():
         blob_magenta = "rgba(219, 39, 119, 0.03)"  # Ultra-subtle frosted light mode
         blob_blue = "rgba(37, 99, 235, 0.035)"     # Ultra-subtle frosted light mode
         blob_orange = "rgba(249, 115, 22, 0.025)"  # Ultra-subtle frosted light mode
-
-    sidebar_link_color = "#A1A1AA" if dark else "#52525B"
-    sidebar_hover_bg = (
-        "rgba(255, 255, 255, 0.06)" if dark else "rgba(0, 0, 0, 0.04)"
-    )
-    sidebar_active_bg = (
-        "rgba(255, 255, 255, 0.10)" if dark else "rgba(0, 0, 0, 0.08)"
-    )
 
     css = f"""
     <style>
