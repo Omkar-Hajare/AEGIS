@@ -16,3 +16,8 @@ data:
   POSTGRES_HOST: "postgres"
   POSTGRES_PORT: "5432"
   POSTGRES_DB: "adaptive_cache"
+  DATABASE_HOST: "postgres"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "adaptive_cache"
+  DATABASE_USER: "postgres"
+  DATABASE_PASSWORD: "postgres"
