@@ -17,7 +17,9 @@ from metrics.prometheus import (
     BACKEND_LATENCY,
     REQUEST_COUNT,
     REQUEST_LATENCY,
+    sync_from_telemetry,
 )
+from telemetry.collector import telemetry_collector
 
 
 app = FastAPI(
@@ -56,6 +58,7 @@ async def prometheus_middleware(request: Request, call_next):
 @app.get("/metrics", include_in_schema=False)
 async def metrics():
     """Expose Prometheus metrics."""
+    sync_from_telemetry(telemetry_collector, cache_manager)
     return Response(
         content=generate_latest(),
         media_type=CONTENT_TYPE_LATEST,

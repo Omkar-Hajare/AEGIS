@@ -60,6 +60,11 @@ from contracts.schemas import (
     WorkloadState,
 )
 
+try:
+    from metrics.prometheus import ADAPTIVE_DECISIONS
+except ImportError:
+    from backend.metrics.prometheus import ADAPTIVE_DECISIONS  # type: ignore[no-redef]
+
 router = APIRouter(prefix="/adaptive", tags=["adaptive"])
 
 
@@ -182,7 +187,7 @@ def compute_decision(
         candidate_objects = request.objects
 
     try:
-        return engine.decide(
+        decision = engine.decide(
             objects=candidate_objects,
             workload=request.workload,
             system=request.system,
@@ -194,6 +199,8 @@ def compute_decision(
             decision_id=request.decision_id,
             capacity_mode=request.capacity_mode,
         )
+        ADAPTIVE_DECISIONS.inc()
+        return decision
     except (ValueError, TypeError) as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -239,7 +246,7 @@ def get_runtime_decision(
         )
 
     try:
-        return service.decide(
+        decision = service.decide(
             now=now,
             min_capacity_bytes=min_capacity_bytes,
             max_capacity_bytes=max_capacity_bytes,
@@ -247,6 +254,8 @@ def get_runtime_decision(
             decision_id=decision_id,
             capacity_mode=capacity_mode,
         )
+        ADAPTIVE_DECISIONS.inc()
+        return decision
     except (ValueError, TypeError) as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
