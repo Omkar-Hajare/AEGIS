@@ -6,8 +6,10 @@ Also provides schema-preview and demo fallback functions.
 """
 
 import os
+from typing import Any
+
 import requests
-from typing import Any, Optional
+
 from frontend.mocks import data as mock_data
 
 BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000").rstrip("/")
@@ -21,7 +23,7 @@ class ApiClient:
     def __init__(self, base_url: str = BACKEND_API_URL):
         self.base_url = base_url
 
-    def get(self, endpoint: str, timeout: float = DEFAULT_READ_TIMEOUT) -> Optional[dict[str, Any]]:
+    def get(self, endpoint: str, timeout: float = DEFAULT_READ_TIMEOUT) -> dict[str, Any] | None:
         """Perform GET request with structured error handling."""
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         try:
@@ -35,9 +37,9 @@ class ApiClient:
     def post(
         self,
         endpoint: str,
-        json_data: Optional[dict[str, Any]] = None,
+        json_data: dict[str, Any] | None = None,
         timeout: float = DEFAULT_ACTION_TIMEOUT,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Perform POST request with structured error handling."""
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         try:
@@ -67,6 +69,64 @@ class ApiClient:
             "base_url": self.base_url,
         }
 
+    def get_runtime_decision(
+        self,
+        *,
+        min_capacity_bytes: int | None = None,
+        max_capacity_bytes: int | None = None,
+        refresh_after_seconds: float | None = None,
+        capacity_mode: str | None = None,
+        now: str | None = None,
+        decision_id: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Fetch live adaptive decision from GET /adaptive/runtime-decision.
+
+        All parameters are optional; the backend applies sensible defaults.
+        Returns the raw decision dict on success, or None if backend unreachable.
+        """
+        params: dict[str, Any] = {}
+        if min_capacity_bytes is not None:
+            params["min_capacity_bytes"] = min_capacity_bytes
+        if max_capacity_bytes is not None:
+            params["max_capacity_bytes"] = max_capacity_bytes
+        if refresh_after_seconds is not None:
+            params["refresh_after_seconds"] = refresh_after_seconds
+        if capacity_mode is not None:
+            params["capacity_mode"] = capacity_mode
+        if now is not None:
+            params["now"] = now
+        if decision_id is not None:
+            params["decision_id"] = decision_id
+
+        url = f"{self.base_url}/adaptive/runtime-decision"
+        try:
+            resp = requests.get(url, params=params, timeout=DEFAULT_READ_TIMEOUT)
+            if resp.status_code == 200:
+                return resp.json()
+            return None
+        except (requests.RequestException, ValueError):
+            return None
+
+    def get_cache_objects(self) -> dict[str, Any]:
+        """Fetch resident cache objects from GET /cache/objects.
+
+        Returns structured dictionary with is_live status, objects list, and object_count.
+        If backend is unavailable, falls back gracefully to mock cache objects.
+        """
+        data = self.get("cache/objects")
+        if data is not None and isinstance(data, dict) and "objects" in data:
+            return {
+                "is_live": True,
+                "objects": data.get("objects", []),
+                "object_count": data.get("object_count", len(data.get("objects", []))),
+            }
+        fallback = getattr(mock_data, "cache_objects", [])
+        return {
+            "is_live": False,
+            "objects": [dict(item) for item in fallback],
+            "object_count": len(fallback),
+        }
+
 
 # Singleton instance for centralized use
 api_client = ApiClient()
@@ -75,6 +135,31 @@ api_client = ApiClient()
 def check_health() -> dict[str, Any]:
     """Module-level health check function."""
     return api_client.check_health()
+
+
+def get_runtime_decision(
+    *,
+    min_capacity_bytes: int | None = None,
+    max_capacity_bytes: int | None = None,
+    refresh_after_seconds: float | None = None,
+    capacity_mode: str | None = None,
+    now: str | None = None,
+    decision_id: str | None = None,
+) -> dict[str, Any] | None:
+    """Module-level convenience: fetch live adaptive decision from backend."""
+    return api_client.get_runtime_decision(
+        min_capacity_bytes=min_capacity_bytes,
+        max_capacity_bytes=max_capacity_bytes,
+        refresh_after_seconds=refresh_after_seconds,
+        capacity_mode=capacity_mode,
+        now=now,
+        decision_id=decision_id,
+    )
+
+
+def fetch_resident_cache_objects() -> dict[str, Any]:
+    """Module-level convenience: fetch resident cache objects from live backend."""
+    return api_client.get_cache_objects()
 
 
 # ----------------------------------------------------------------------
@@ -86,7 +171,7 @@ def get_cache_stats() -> dict[str, Any]:
 
 
 def get_cache_objects() -> list[dict[str, Any]]:
-    """Fetch object entries for 2D schema preview."""
+    """Fetch object entries for 2D schema preview (legacy fallback / demo dataset)."""
     return getattr(mock_data, "cache_objects", [])
 
 

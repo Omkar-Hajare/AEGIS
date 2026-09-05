@@ -5,18 +5,19 @@ Executes live requests against FastAPI /data/product/{id} and /data/recommendati
 to vividly demonstrate the first-request Cache MISS followed by the repeated-request Cache HIT.
 """
 
-import time
 import random
+import time
+
 import streamlit as st
+
+from frontend.components.metric_card import render_metric_card
+from frontend.components.styles import get_theme_colors
 from frontend.services.data_service import fetch_product, fetch_recommendation
 from frontend.services.telemetry_service import get_telemetry_observation
-from frontend.components.styles import get_theme_colors
-from frontend.components.metric_card import render_metric_card
 from frontend.utils.formatting import (
-    format_percentage,
-    format_latency,
     format_int,
-    format_timestamp,
+    format_latency,
+    format_percentage,
 )
 
 
@@ -269,24 +270,33 @@ def render_request_simulator_view():
                 else "Retrieval duration reflects full backend execution penalty (~30ms) before writing entry into cache."
             )
 
+            target_k = last_res.get("target_key", "")
+            live_counts = obs.get("current_window_access_counts", {})
+            key_cnt = live_counts.get(target_k)
+            cnt_str = f"{key_cnt} accesses" if key_cnt is not None else "Recorded"
+
             res_card_html = (
                 f'<div class="decision-card" style="padding: 22px 24px; margin-bottom: 20px; border-radius: 12px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
                 f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">'
                 f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">REQUEST OUTCOME</span>'
                 f'<div>{verdict_badge}</div>'
                 f'</div>'
-                f'<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; text-align: center;">'
-                f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 12px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
-                f'<span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase; display: block;">Round Trip</span>'
-                f'<div style="font-size: 15px; font-weight: 800; color: {c["text"]}; margin-top: 2px;">{elapsed:.1f} ms</div>'
+                f'<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; text-align: center;">'
+                f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
+                f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block;">Round Trip</span>'
+                f'<div style="font-size: 14px; font-weight: 800; color: {c["text"]}; margin-top: 2px;">{elapsed:.1f} ms</div>'
                 f'</div>'
-                f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 12px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
-                f'<span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase; display: block;">HTTP Status</span>'
-                f'<div style="font-size: 15px; font-weight: 800; color: {c["emerald"]}; margin-top: 2px;">{last_res.get("status_code", 200)} OK</div>'
+                f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
+                f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block;">HTTP Status</span>'
+                f'<div style="font-size: 14px; font-weight: 800; color: {c["emerald"]}; margin-top: 2px;">{last_res.get("status_code", 200)} OK</div>'
                 f'</div>'
-                f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 12px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
-                f'<span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase; display: block;">Target Key</span>'
-                f'<div style="font-size: 12px; font-weight: 700; color: {c["text"]}; word-break: break-all; margin-top: 4px;">{last_res.get("target_key")}</div>'
+                f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
+                f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block;">Target Key</span>'
+                f'<div style="font-size: 11px; font-weight: 700; color: {c["text"]}; word-break: break-all; margin-top: 4px;">{last_res.get("target_key")}</div>'
+                f'</div>'
+                f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
+                f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block;">Window Accesses</span>'
+                f'<div style="font-size: 14px; font-weight: 800; color: {c["purple"]}; margin-top: 2px;">{cnt_str}</div>'
                 f'</div>'
                 f'</div>'
                 f'<p style="font-size: 12px; color: {c["text_muted"]}; line-height: 1.45; margin: 0 0 12px 0;">{verdict_explanation}</p>'

@@ -9,6 +9,7 @@ if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
 from api.routes.adaptive import router as adaptive_router
+from api.routes.cache import router as cache_router
 from api.routes.data import router as data_router
 from api.routes.telemetry import router as telemetry_router
 
@@ -21,6 +22,7 @@ app = FastAPI(
 )
 
 app.include_router(data_router)
+app.include_router(cache_router)
 app.include_router(telemetry_router)
 app.include_router(adaptive_router)
 
@@ -43,12 +45,13 @@ def root():
             "telemetry_reset": "/telemetry/window/reset",
             "product_data": "/data/product/{product_id}",
             "recommendation_data": "/data/recommendation/{user_id}",
+            "cache_objects": "/cache/objects",
         },
     }
 
 
 @app.get("/health")
-def health_check(current_settings: Settings = Depends(get_settings)):
+def health_check(current_settings: Settings = Depends(get_settings)):  # noqa: B008
     return {
         "status": "ok",
         "service": current_settings.app_name,

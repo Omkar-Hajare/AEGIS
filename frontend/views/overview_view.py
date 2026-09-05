@@ -1,26 +1,25 @@
 import streamlit as st
-import pandas as pd
 
+from frontend.components.charts import render_donut_chart
+from frontend.components.metric_card import render_metric_card
+from frontend.components.navbar import navigate_to
+from frontend.components.status_badge import get_decision_badge_html
+from frontend.components.styles import get_theme_colors
 from frontend.services.api_client import check_health
 from frontend.services.telemetry_service import (
+    get_system_state,
     get_telemetry_observation,
     get_workload_state,
-    get_system_state,
 )
 from frontend.utils.formatting import (
-    format_percentage,
-    format_latency,
-    format_request_rate,
     format_bytes,
-    format_int,
     format_duration,
+    format_int,
+    format_latency,
+    format_percentage,
+    format_request_rate,
     format_timestamp,
 )
-from frontend.components.styles import get_theme_colors, is_dark_mode
-from frontend.components.metric_card import render_metric_card
-from frontend.components.charts import render_donut_chart
-from frontend.components.status_badge import get_decision_badge_html
-from frontend.components.navbar import navigate_to
 
 
 def render_overview_view():
@@ -43,7 +42,6 @@ def render_overview_view():
         if is_live
         else f'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:{c["amber"]};margin-right:6px;"></span>'
     )
-    api_endpoint = "http://localhost:8000"
 
     # --------------------------------------------------
     # HERO EXECUTIVE HEADER
