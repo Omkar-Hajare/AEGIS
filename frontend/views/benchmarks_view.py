@@ -1,10 +1,10 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
-from frontend.services.api_client import get_benchmark_results
-from frontend.components.styles import get_theme_colors
-from frontend.components.metric_card import render_metric_card
 from frontend.components.charts import render_comparison_bar_chart
+from frontend.components.metric_card import render_metric_card
+from frontend.components.styles import get_theme_colors
+from frontend.services.api_client import get_benchmark_results
 
 
 def render_benchmarks_view():
@@ -188,7 +188,11 @@ def render_benchmarks_view():
     # --------------------------------------------------
     # EMPIRICAL RESULTS MATRIX TABLE
     # --------------------------------------------------
-    st.markdown("### Empirical Benchmark Evaluation Matrix")
+    st.markdown(
+        f"### Empirical Benchmark Evaluation Matrix "
+        f'<span style="font-size: 11px; font-weight: 700; color: {c["amber"]};">[OFFLINE REPLAY DATASET]</span>',
+        unsafe_allow_html=True,
+    )
 
     display_df = df.copy()
     display_df["Hit Rate"] = display_df["hit_rate"].apply(lambda h: f"{h:.1f}%")

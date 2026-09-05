@@ -1,18 +1,18 @@
 """Cost Analysis View.
 
 Evaluates cost-aware caching efficiency using measured backend retrieval latency
-and compute offload signals, while honestly indicating that monetary cost model endpoints
-are pending backend integration.
+and compute offload signals, while honestly indicating that monetary calculations
+are simulated theoretical models as no public pricing endpoint exists in backend.
 """
 
 import streamlit as st
-from frontend.services.telemetry_service import get_telemetry_observation
-from frontend.components.styles import get_theme_colors
+
 from frontend.components.metric_card import render_metric_card
+from frontend.components.styles import get_theme_colors
+from frontend.services.telemetry_service import get_telemetry_observation
 from frontend.utils.formatting import (
-    format_latency,
     format_int,
-    format_duration,
+    format_latency,
 )
 
 
@@ -23,7 +23,6 @@ def render_cost_analysis_view():
 
     total_reqs = obs.get("total_requests", 0)
     hits = obs.get("cache_hits", 0)
-    backend_calls = obs.get("backend_calls", 0)
     latency_ms = obs.get("backend_latency_ms", 0.0)
 
     # Derived time saved = hits * latency_ms
@@ -108,12 +107,12 @@ def render_cost_analysis_view():
     with m4:
         render_metric_card(
             title="Economic Value Density",
-            value="Ready for API",
+            value="Theoretical Model",
             subtitle="Formula: (Cost &times; Freq) / Size",
-            tag="[PROJECTED]",
-            delta="Pending Cost Endpoint",
+            tag="[SIMULATED]",
+            delta="No Monetary Endpoint",
             delta_color=c["purple"],
-            tooltip="Theoretical metric calculated by Person 1's adaptive engine to prioritize high-cost objects.",
+            tooltip="Theoretical metric prioritizing objects by recompute cost, latency penalty, and access frequency.",
         )
 
     # --------------------------------------------------
@@ -166,8 +165,8 @@ def render_cost_analysis_view():
             f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 5px; line-height: 1.45;">Computed telemetry combinations: cumulative time saved (hits &times; latency), hit/miss percentages, offload ratio.</div>'
             f'</div>'
             f'<div>'
-            f'<span style="background: {"rgba(167, 139, 250, 0.12)" if c["is_dark"] else "rgba(167, 139, 250, 0.10)"}; color: {c["purple"]}; border: 1px solid {"rgba(167, 139, 250, 0.25)" if c["is_dark"] else "rgba(167, 139, 250, 0.20)"}; padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 800;">[PROJECTED]</span>'
-            f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 5px; line-height: 1.45;">Simulated economic savings: waiting for Person 1 adaptive engine integration and backend monetary API exposure.</div>'
+            f'<span style="background: {"rgba(167, 139, 250, 0.12)" if c["is_dark"] else "rgba(167, 139, 250, 0.10)"}; color: {c["purple"]}; border: 1px solid {"rgba(167, 139, 250, 0.25)" if c["is_dark"] else "rgba(167, 139, 250, 0.20)"}; padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 800;">[SIMULATED]</span>'
+            f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 5px; line-height: 1.45;">Simulated economic model: theoretical formulation as the backend does not expose a monetary dollar pricing endpoint.</div>'
             f'</div>'
             f'</div>'
         )
