@@ -5,6 +5,7 @@ Executes live requests against FastAPI /data/product/{id} and /data/recommendati
 to vividly demonstrate the first-request Cache MISS followed by the repeated-request Cache HIT.
 """
 
+import html
 import random
 import time
 
@@ -231,7 +232,7 @@ def render_request_simulator_view():
             st.markdown(
                 f'<div style="background: {"rgba(255, 255, 255, 0.04)" if c["is_dark"] else "rgba(0, 0, 0, 0.03)"}; border: 1px dashed {c["card_border"]}; border-radius: 8px; padding: 10px 14px; margin-top: 10px;">'
                 f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">Instant Replay Target:</span>'
-                f'<div style="font-family: monospace; font-size: 13px; font-weight: 700; color: {c["text"]}; margin: 2px 0 8px 0;">{curr_target}</div>'
+                f'<div style="font-family: monospace; font-size: 13px; font-weight: 700; color: {c["text"]}; margin: 2px 0 8px 0;">{html.escape(str(curr_target))}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -292,7 +293,7 @@ def render_request_simulator_view():
                 f'</div>'
                 f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                 f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block;">Target Key</span>'
-                f'<div style="font-size: 11px; font-weight: 700; color: {c["text"]}; word-break: break-all; margin-top: 4px;">{last_res.get("target_key")}</div>'
+                f'<div style="font-size: 11px; font-weight: 700; color: {c["text"]}; word-break: break-all; margin-top: 4px;">{html.escape(str(last_res.get("target_key")))}</div>'
                 f'</div>'
                 f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                 f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block;">Window Accesses</span>'

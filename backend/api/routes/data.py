@@ -2,7 +2,7 @@ import logging
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.orm import Session
 
 try:
@@ -51,6 +51,12 @@ cache_manager = create_cache_manager()
 
 # Application-level BackendAdapter configured via factory based on settings
 backend_adapter = get_backend_adapter()
+
+# Identifiers become cache keys (and are later surfaced verbatim to the
+# frontend via GET /cache/objects, where they are rendered into HTML). Restrict
+# them to a safe charset at the boundary so no unexpected characters can ever
+# enter the shared cache/metadata store or downstream renderers.
+_IDENTIFIER_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
 
 
 def _persist_cache_metadata(db: Any, meta: CacheObjectMetadata) -> None:
@@ -116,7 +122,7 @@ def invalidate_cached_key(key: str, db: Any = None) -> bool:
 
 @router.get("/product/{product_id}")
 def get_product(
-    product_id: str,
+    product_id: str = Path(..., pattern=_IDENTIFIER_PATTERN),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> dict[str, Any]:
     telemetry_collector.record_request()
@@ -173,7 +179,7 @@ def get_product(
 
 @router.get("/recommendation/{user_id}")
 def get_recommendation(
-    user_id: str,
+    user_id: str = Path(..., pattern=_IDENTIFIER_PATTERN),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> dict[str, Any]:
     telemetry_collector.record_request()
@@ -230,7 +236,7 @@ def get_recommendation(
 
 @router.delete("/product/{product_id}")
 def delete_product(
-    product_id: str,
+    product_id: str = Path(..., pattern=_IDENTIFIER_PATTERN),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> dict[str, Any]:
     cache_key = f"product:{product_id}"
@@ -245,7 +251,7 @@ def delete_product(
 
 @router.delete("/recommendation/{user_id}")
 def delete_recommendation(
-    user_id: str,
+    user_id: str = Path(..., pattern=_IDENTIFIER_PATTERN),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> dict[str, Any]:
     cache_key = f"recommendation:{user_id}"

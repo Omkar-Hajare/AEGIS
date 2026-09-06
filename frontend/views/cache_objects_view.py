@@ -1,3 +1,5 @@
+import html
+
 import pandas as pd
 import streamlit as st
 
@@ -167,7 +169,7 @@ def render_cache_objects_view():
                     f"""
                     <div class="status-card" style="padding: 10px 12px;">
                         <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">KEY</span>
-                        <div style="font-family: monospace; font-size: 12px; font-weight: 700; color: {c['text']}; margin: 2px 0 4px 0;">{lk}</div>
+                        <div style="font-family: monospace; font-size: 12px; font-weight: 700; color: {c['text']}; margin: 2px 0 4px 0;">{html.escape(str(lk))}</div>
                         <div style="font-size: 13px; font-weight: 800; color: {c['text']};">{format_int(lcnt)} accesses</div>
                     </div>
                     """,
@@ -459,11 +461,11 @@ def render_cache_objects_view():
                         f'</div>'
                         f'<div style="margin-bottom: 12px;">'
                         f'<span style="font-size: 10px; font-weight: 700; color: {c["text_subtle"]}; text-transform: uppercase; display: block; margin-bottom: 4px;">CACHE KEY IDENTIFIER</span>'
-                        f'<code style="font-size: 12px; color: {c["text"]}; font-weight: 700; word-break: break-all; background: {c["card_bg_elevated"]}; padding: 6px 10px; border-radius: 6px; border: 1px solid {c["card_border"]}; display: block; font-family: monospace;">{item["key"]}</code>'
+                        f'<code style="font-size: 12px; color: {c["text"]}; font-weight: 700; word-break: break-all; background: {c["card_bg_elevated"]}; padding: 6px 10px; border-radius: 6px; border: 1px solid {c["card_border"]}; display: block; font-family: monospace;">{html.escape(str(item["key"]))}</code>'
                         f'</div>'
                         f'<div style="margin: 12px 0; padding: 12px 14px; background: {c["card_bg_elevated"]}; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                         f'<span style="font-size: 10px; font-weight: 800; color: {c["text_muted"]}; letter-spacing: 0.5px; text-transform: uppercase;">DERIVED INSIGHT</span>'
-                        f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px; line-height: 1.5;">{rationale_text}</div>'
+                        f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px; line-height: 1.5;">{html.escape(str(rationale_text))}</div>'
                         f'<span style="font-size: 9.5px; color: {c["text_muted"]}; display: block; margin-top: 6px; font-style: italic;">* Frontend-derived heuristic based on observed access counts, size, and retrieval latency. Not an Adaptive DecisionEngine output.</span>'
                         f'</div>'
                         f'<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; text-align: center;">'
