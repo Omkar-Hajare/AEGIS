@@ -17,8 +17,7 @@ try:
         CACHE_MISSES,
     )
     from telemetry.collector import telemetry_collector
-    from workload.product_api import get_product_data
-    from workload.recommendation_api import get_recommendation_data
+    from workload.factory import get_backend_adapter
 except ImportError:
     from backend.cache.factory import create_cache_manager  # type: ignore[no-redef]
     from backend.cache.metadata import (  # type: ignore[no-redef]
@@ -38,11 +37,8 @@ except ImportError:
     from backend.telemetry.collector import (  # type: ignore[no-redef]
         telemetry_collector,
     )
-    from backend.workload.product_api import (  # type: ignore[no-redef]
-        get_product_data,
-    )
-    from backend.workload.recommendation_api import (  # type: ignore[no-redef]
-        get_recommendation_data,
+    from backend.workload.factory import (  # type: ignore[no-redef]
+        get_backend_adapter,
     )
 
 
@@ -52,6 +48,9 @@ router = APIRouter(prefix="/data", tags=["data"])
 
 # Shared application-level CacheManager.
 cache_manager = create_cache_manager()
+
+# Application-level BackendAdapter configured via factory based on settings
+backend_adapter = get_backend_adapter()
 
 
 def _persist_cache_metadata(db: Any, meta: CacheObjectMetadata) -> None:
@@ -139,9 +138,7 @@ def get_product(
     CACHE_MISSES.inc()
 
     start_time = time.perf_counter()
-
-    data = get_product_data(product_id)
-
+    data = backend_adapter.get_product(product_id)
     latency_ms = (time.perf_counter() - start_time) * 1000.0
 
     telemetry_collector.record_backend_call(latency_ms)
@@ -198,9 +195,7 @@ def get_recommendation(
     CACHE_MISSES.inc()
 
     start_time = time.perf_counter()
-
-    data = get_recommendation_data(user_id)
-
+    data = backend_adapter.get_recommendation(user_id)
     latency_ms = (time.perf_counter() - start_time) * 1000.0
 
     telemetry_collector.record_backend_call(latency_ms)
