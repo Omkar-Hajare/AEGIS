@@ -11,8 +11,18 @@ from frontend.components.status_badge import (
 )
 from frontend.components.styles import get_theme_colors
 from frontend.services.api_client import api_client
+from frontend.services.data_service import invalidate_cache_key
 from frontend.services.telemetry_service import get_telemetry_observation
 from frontend.utils.formatting import format_int
+
+# Short TTL so the registry table/scatter/inspector share one backend round
+# trip per rerun burst instead of re-fetching on every widget interaction.
+_CACHE_OBJECTS_TTL_SECONDS = 2
+
+
+@st.cache_data(ttl=_CACHE_OBJECTS_TTL_SECONDS, show_spinner=False)
+def _get_cache_objects_cached() -> dict:
+    return api_client.get_cache_objects()
 
 
 def render_cache_objects_view():
@@ -26,7 +36,7 @@ def render_cache_objects_view():
     # --------------------------------------------------
     # DATA RETRIEVAL (LIVE / FALLBACK)
     # --------------------------------------------------
-    cache_response = api_client.get_cache_objects()
+    cache_response = _get_cache_objects_cached()
     is_live = cache_response.get("is_live", False)
     fetched_objects = [dict(item) for item in cache_response.get("objects", [])]
     raw_objects = []
@@ -336,8 +346,13 @@ def render_cache_objects_view():
         df_filtered = df_all.copy()
         if not df_filtered.empty:
             if search_query:
+                # regex=False: treat the query as a literal substring so an
+                # unbalanced/invalid regex (e.g. a stray "(") typed by a user
+                # can't raise and crash the page.
                 df_filtered = df_filtered[
-                    df_filtered["key"].str.contains(search_query, case=False)
+                    df_filtered["key"].str.contains(
+                        search_query, case=False, regex=False
+                    )
                 ]
             if status_filter != "All Statuses":
                 df_filtered = df_filtered[df_filtered["status"] == status_filter]
@@ -499,3 +514,39 @@ def render_cache_objects_view():
                         f'</div>'
                     )
                     st.markdown(inspector_card_html, unsafe_allow_html=True)
+
+                    if is_live:
+                        inv_col1, inv_col2 = st.columns([2, 1])
+                        with inv_col1:
+                            st.caption(
+                                "Manually evict this object from Tier-1 RAM and its persisted metadata."
+                            )
+                        with inv_col2:
+                            if st.button(
+                                "🗑️ Invalidate",
+                                key=f"invalidate_{selected_key}",
+                                width="stretch",
+                                help="DELETE /cache/objects/{key} — removes this entry now.",
+                            ):
+                                inv_result = invalidate_cache_key(selected_key)
+                                _get_cache_objects_cached.clear()
+                                if inv_result.get("deleted"):
+                                    st.toast(
+                                        f"Invalidated '{selected_key}'", icon="🗑️"
+                                    )
+                                elif inv_result.get("is_live"):
+                                    st.toast(
+                                        f"'{selected_key}' was already gone",
+                                        icon="ℹ️",
+                                    )
+                                else:
+                                    st.toast(
+                                        "Backend unreachable — nothing invalidated",
+                                        icon="⚠️",
+                                    )
+                                st.session_state.pop("selected_diagnostic_key", None)
+                                st.rerun()
+                    else:
+                        st.caption(
+                            "Manual invalidation requires a live backend connection."
+                        )

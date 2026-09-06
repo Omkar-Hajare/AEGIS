@@ -5,9 +5,20 @@ to demonstrate cache request lifecycle, MISS/HIT timing, and payload retrieval.
 """
 
 import time
-import requests
 from typing import Any
-from frontend.services.api_client import api_client, DEFAULT_READ_TIMEOUT
+
+import requests
+
+from frontend.services.api_client import DEFAULT_READ_TIMEOUT, api_client
+
+
+def invalidate_cache_key(key: str) -> dict[str, Any]:
+    """Manually invalidate a resident cache object via DELETE /cache/objects/{key}.
+
+    Thin pass-through to the centralized ApiClient so views never construct
+    HTTP calls directly.
+    """
+    return api_client.invalidate_cache_object(key)
 
 
 def fetch_product(product_id: str) -> dict[str, Any]:
@@ -41,7 +52,7 @@ def fetch_product(product_id: str) -> dict[str, Any]:
             "target_key": f"product:{clean_id}",
             "error": f"HTTP {resp.status_code}: {resp.text}",
         }
-    except requests.RequestException as e:
+    except requests.RequestException:
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
         # Demo fallback simulation when offline
         return {
@@ -92,7 +103,7 @@ def fetch_recommendation(user_id: str) -> dict[str, Any]:
             "target_key": f"recommendation:{clean_id}",
             "error": f"HTTP {resp.status_code}: {resp.text}",
         }
-    except requests.RequestException as e:
+    except requests.RequestException:
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
         return {
             "success": True,

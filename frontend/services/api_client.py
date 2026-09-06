@@ -6,12 +6,11 @@ Also provides schema-preview and demo fallback functions.
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
 from frontend.mocks import data as mock_data
-
 
 # Backend URL configurable via environment variable.
 # Docker/Kubernetes can override this with BACKEND_URL.
@@ -58,7 +57,7 @@ class ApiClient:
         self,
         endpoint: str,
         timeout: float = DEFAULT_READ_TIMEOUT,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Perform GET request with structured error handling."""
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
 
@@ -99,6 +98,49 @@ class ApiClient:
 
         except (requests.RequestException, ValueError):
             return None
+
+    def delete(
+        self,
+        endpoint: str,
+        timeout: float = DEFAULT_ACTION_TIMEOUT,
+    ) -> dict[str, Any] | None:
+        """Perform DELETE request with structured error handling."""
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+
+        try:
+            response = requests.delete(
+                url,
+                timeout=timeout,
+            )
+
+            if response.status_code == 200:
+                return response.json()
+
+            return None
+
+        except (requests.RequestException, ValueError):
+            return None
+
+    def invalidate_cache_object(self, key: str) -> dict[str, Any]:
+        """Invalidate a resident cache object via DELETE /cache/objects/{key}.
+
+        Returns a structured result so callers can distinguish a confirmed
+        deletion from a backend-unreachable/offline outcome.
+        """
+        result = self.delete(f"cache/objects/{key}")
+
+        if result is not None:
+            return {
+                "is_live": True,
+                "deleted": bool(result.get("deleted", False)),
+                "key": result.get("key", key),
+            }
+
+        return {
+            "is_live": False,
+            "deleted": False,
+            "key": key,
+        }
 
     def check_health(self) -> dict[str, Any]:
         """Check backend health via GET /health."""

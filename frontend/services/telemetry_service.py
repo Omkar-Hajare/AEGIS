@@ -4,14 +4,23 @@ Provides read-only observation, workload, and system state snapshots,
 as well as window reset triggers adhering strictly to backend contracts.
 """
 
-from typing import Any, Optional
+from typing import Any
+
+import streamlit as st
+
+from frontend.mocks.data import cache_stats
 from frontend.services.api_client import api_client
-from frontend.mocks.data import cache_stats, workload as mock_workload
+
+# Short TTL so rapid successive Streamlit reruns (e.g. multiple widgets
+# reading telemetry within the same interaction) share one backend round
+# trip, without the dashboard ever looking more than ~2s stale.
+_LIVE_TTL_SECONDS = 2
 
 
+@st.cache_data(ttl=_LIVE_TTL_SECONDS, show_spinner=False)
 def get_telemetry_observation() -> dict[str, Any]:
     """Fetch live time-windowed observation from GET /telemetry/observation.
-    
+
     Falls back gracefully to mock trace if backend is unreachable.
     """
     data = api_client.get("telemetry/observation")
@@ -42,6 +51,7 @@ def get_telemetry_observation() -> dict[str, Any]:
     }
 
 
+@st.cache_data(ttl=_LIVE_TTL_SECONDS, show_spinner=False)
 def get_workload_state() -> dict[str, Any]:
     """Fetch observed WorkloadState from GET /telemetry/workload."""
     data = api_client.get("telemetry/workload")
@@ -63,6 +73,7 @@ def get_workload_state() -> dict[str, Any]:
     }
 
 
+@st.cache_data(ttl=_LIVE_TTL_SECONDS, show_spinner=False)
 def get_system_state() -> dict[str, Any]:
     """Fetch observed SystemState from GET /telemetry/system."""
     data = api_client.get("telemetry/system")
@@ -87,6 +98,11 @@ def get_system_state() -> dict[str, Any]:
 def reset_telemetry_window() -> dict[str, Any]:
     """Trigger observation window rotation and counter reset via POST /telemetry/window/reset."""
     result = api_client.post("telemetry/window/reset")
+    # Drop the short-lived telemetry cache so the reset is reflected on the
+    # very next read instead of serving a pre-reset snapshot for up to 2s.
+    get_telemetry_observation.clear()
+    get_workload_state.clear()
+    get_system_state.clear()
     if result:
         return result
     return {"status": "ok", "message": "Demo telemetry window rotated (offline)"}
