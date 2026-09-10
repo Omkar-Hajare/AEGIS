@@ -2,7 +2,7 @@ import logging
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.orm import Session
 
 try:
@@ -17,8 +17,7 @@ try:
         CACHE_MISSES,
     )
     from telemetry.collector import telemetry_collector
-    from workload.product_api import get_product_data
-    from workload.recommendation_api import get_recommendation_data
+    from workload.factory import get_backend_adapter
 except ImportError:
     from backend.cache.factory import create_cache_manager  # type: ignore[no-redef]
     from backend.cache.metadata import (  # type: ignore[no-redef]
@@ -38,11 +37,8 @@ except ImportError:
     from backend.telemetry.collector import (  # type: ignore[no-redef]
         telemetry_collector,
     )
-    from backend.workload.product_api import (  # type: ignore[no-redef]
-        get_product_data,
-    )
-    from backend.workload.recommendation_api import (  # type: ignore[no-redef]
-        get_recommendation_data,
+    from backend.workload.factory import (  # type: ignore[no-redef]
+        get_backend_adapter,
     )
 
 
@@ -52,6 +48,15 @@ router = APIRouter(prefix="/data", tags=["data"])
 
 # Shared application-level CacheManager.
 cache_manager = create_cache_manager()
+
+# Application-level BackendAdapter configured via factory based on settings
+backend_adapter = get_backend_adapter()
+
+# Identifiers become cache keys (and are later surfaced verbatim to the
+# frontend via GET /cache/objects, where they are rendered into HTML). Restrict
+# them to a safe charset at the boundary so no unexpected characters can ever
+# enter the shared cache/metadata store or downstream renderers.
+_IDENTIFIER_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
 
 
 def _persist_cache_metadata(db: Any, meta: CacheObjectMetadata) -> None:
@@ -117,7 +122,7 @@ def invalidate_cached_key(key: str, db: Any = None) -> bool:
 
 @router.get("/product/{product_id}")
 def get_product(
-    product_id: str,
+    product_id: str = Path(..., pattern=_IDENTIFIER_PATTERN),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> dict[str, Any]:
     telemetry_collector.record_request()
@@ -139,9 +144,7 @@ def get_product(
     CACHE_MISSES.inc()
 
     start_time = time.perf_counter()
-
-    data = get_product_data(product_id)
-
+    data = backend_adapter.get_product(product_id)
     latency_ms = (time.perf_counter() - start_time) * 1000.0
 
     telemetry_collector.record_backend_call(latency_ms)
@@ -176,7 +179,7 @@ def get_product(
 
 @router.get("/recommendation/{user_id}")
 def get_recommendation(
-    user_id: str,
+    user_id: str = Path(..., pattern=_IDENTIFIER_PATTERN),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> dict[str, Any]:
     telemetry_collector.record_request()
@@ -198,9 +201,7 @@ def get_recommendation(
     CACHE_MISSES.inc()
 
     start_time = time.perf_counter()
-
-    data = get_recommendation_data(user_id)
-
+    data = backend_adapter.get_recommendation(user_id)
     latency_ms = (time.perf_counter() - start_time) * 1000.0
 
     telemetry_collector.record_backend_call(latency_ms)
@@ -235,7 +236,7 @@ def get_recommendation(
 
 @router.delete("/product/{product_id}")
 def delete_product(
-    product_id: str,
+    product_id: str = Path(..., pattern=_IDENTIFIER_PATTERN),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> dict[str, Any]:
     cache_key = f"product:{product_id}"
@@ -250,7 +251,7 @@ def delete_product(
 
 @router.delete("/recommendation/{user_id}")
 def delete_recommendation(
-    user_id: str,
+    user_id: str = Path(..., pattern=_IDENTIFIER_PATTERN),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> dict[str, Any]:
     cache_key = f"recommendation:{user_id}"

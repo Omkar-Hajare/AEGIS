@@ -5,6 +5,7 @@ Executes live requests against FastAPI /data/product/{id} and /data/recommendati
 to vividly demonstrate the first-request Cache MISS followed by the repeated-request Cache HIT.
 """
 
+import html
 import random
 import time
 
@@ -231,7 +232,7 @@ def render_request_simulator_view():
             st.markdown(
                 f'<div style="background: {"rgba(255, 255, 255, 0.04)" if c["is_dark"] else "rgba(0, 0, 0, 0.03)"}; border: 1px dashed {c["card_border"]}; border-radius: 8px; padding: 10px 14px; margin-top: 10px;">'
                 f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">Instant Replay Target:</span>'
-                f'<div style="font-family: monospace; font-size: 13px; font-weight: 700; color: {c["text"]}; margin: 2px 0 8px 0;">{curr_target}</div>'
+                f'<div style="font-family: monospace; font-size: 13px; font-weight: 700; color: {c["text"]}; margin: 2px 0 8px 0;">{html.escape(str(curr_target))}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -256,7 +257,23 @@ def render_request_simulator_view():
         )
 
         last_res = st.session_state.get("sim_last_result")
-        if last_res:
+        if last_res and last_res.get("success") is False:
+            # Backend explicitly rejected the request (e.g. 422 on an invalid
+            # identifier) — surface this as an error, never as a false HIT.
+            status_code = last_res.get("status_code", "—")
+            error_html = (
+                f'<div class="decision-card" style="padding: 22px 24px; margin-bottom: 20px; border-radius: 12px; background: {c["card_bg"]}; border: 1px solid {c["card_border"]};">'
+                f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">'
+                f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">REQUEST OUTCOME</span>'
+                f'<span style="background: {"rgba(239, 68, 68, 0.12)" if c["is_dark"] else "rgba(239, 68, 68, 0.10)"}; color: {c["rose"]}; border: 1px solid {"rgba(239, 68, 68, 0.25)" if c["is_dark"] else "rgba(239, 68, 68, 0.20)"}; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 800;">✕ REQUEST REJECTED (HTTP {status_code})</span>'
+                f'</div>'
+                f'<div style="font-size: 11px; font-weight: 700; color: {c["text_subtle"]}; text-transform: uppercase; margin-bottom: 4px;">Target Key</div>'
+                f'<div style="font-size: 12px; font-weight: 700; color: {c["text"]}; word-break: break-all; margin-bottom: 12px; font-family: monospace;">{html.escape(str(last_res.get("target_key", "")))}</div>'
+                f'<p style="font-size: 12px; color: {c["text_muted"]}; line-height: 1.45; margin: 0;">{html.escape(str(last_res.get("error", "The backend rejected this request.")))}</p>'
+                f'</div>'
+            )
+            st.markdown(error_html, unsafe_allow_html=True)
+        elif last_res:
             elapsed = last_res.get("elapsed_ms", 0.0)
             is_likely_hit = elapsed < 12.0
             verdict_badge = (
@@ -292,7 +309,7 @@ def render_request_simulator_view():
                 f'</div>'
                 f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                 f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block;">Target Key</span>'
-                f'<div style="font-size: 11px; font-weight: 700; color: {c["text"]}; word-break: break-all; margin-top: 4px;">{last_res.get("target_key")}</div>'
+                f'<div style="font-size: 11px; font-weight: 700; color: {c["text"]}; word-break: break-all; margin-top: 4px;">{html.escape(str(last_res.get("target_key")))}</div>'
                 f'</div>'
                 f'<div style="background: {c["card_bg_elevated"]}; padding: 10px 8px; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                 f'<span class="muted" style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: block;">Window Accesses</span>'

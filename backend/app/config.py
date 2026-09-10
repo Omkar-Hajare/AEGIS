@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     app_name: str = "Adaptive Cache System"
     app_version: str = "0.1.0"
     cache_backend: str = "inmemory"
+    data_backend: str = "simulated"
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0

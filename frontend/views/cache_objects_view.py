@@ -1,3 +1,5 @@
+import html
+
 import pandas as pd
 import streamlit as st
 
@@ -9,8 +11,18 @@ from frontend.components.status_badge import (
 )
 from frontend.components.styles import get_theme_colors
 from frontend.services.api_client import api_client
+from frontend.services.data_service import invalidate_cache_key
 from frontend.services.telemetry_service import get_telemetry_observation
 from frontend.utils.formatting import format_int
+
+# Short TTL so the registry table/scatter/inspector share one backend round
+# trip per rerun burst instead of re-fetching on every widget interaction.
+_CACHE_OBJECTS_TTL_SECONDS = 2
+
+
+@st.cache_data(ttl=_CACHE_OBJECTS_TTL_SECONDS, show_spinner=False)
+def _get_cache_objects_cached() -> dict:
+    return api_client.get_cache_objects()
 
 
 def render_cache_objects_view():
@@ -24,7 +36,7 @@ def render_cache_objects_view():
     # --------------------------------------------------
     # DATA RETRIEVAL (LIVE / FALLBACK)
     # --------------------------------------------------
-    cache_response = api_client.get_cache_objects()
+    cache_response = _get_cache_objects_cached()
     is_live = cache_response.get("is_live", False)
     fetched_objects = [dict(item) for item in cache_response.get("objects", [])]
     raw_objects = []
@@ -167,7 +179,7 @@ def render_cache_objects_view():
                     f"""
                     <div class="status-card" style="padding: 10px 12px;">
                         <span class="muted" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">KEY</span>
-                        <div style="font-family: monospace; font-size: 12px; font-weight: 700; color: {c['text']}; margin: 2px 0 4px 0;">{lk}</div>
+                        <div style="font-family: monospace; font-size: 12px; font-weight: 700; color: {c['text']}; margin: 2px 0 4px 0;">{html.escape(str(lk))}</div>
                         <div style="font-size: 13px; font-weight: 800; color: {c['text']};">{format_int(lcnt)} accesses</div>
                     </div>
                     """,
@@ -334,8 +346,13 @@ def render_cache_objects_view():
         df_filtered = df_all.copy()
         if not df_filtered.empty:
             if search_query:
+                # regex=False: treat the query as a literal substring so an
+                # unbalanced/invalid regex (e.g. a stray "(") typed by a user
+                # can't raise and crash the page.
                 df_filtered = df_filtered[
-                    df_filtered["key"].str.contains(search_query, case=False)
+                    df_filtered["key"].str.contains(
+                        search_query, case=False, regex=False
+                    )
                 ]
             if status_filter != "All Statuses":
                 df_filtered = df_filtered[df_filtered["status"] == status_filter]
@@ -459,11 +476,11 @@ def render_cache_objects_view():
                         f'</div>'
                         f'<div style="margin-bottom: 12px;">'
                         f'<span style="font-size: 10px; font-weight: 700; color: {c["text_subtle"]}; text-transform: uppercase; display: block; margin-bottom: 4px;">CACHE KEY IDENTIFIER</span>'
-                        f'<code style="font-size: 12px; color: {c["text"]}; font-weight: 700; word-break: break-all; background: {c["card_bg_elevated"]}; padding: 6px 10px; border-radius: 6px; border: 1px solid {c["card_border"]}; display: block; font-family: monospace;">{item["key"]}</code>'
+                        f'<code style="font-size: 12px; color: {c["text"]}; font-weight: 700; word-break: break-all; background: {c["card_bg_elevated"]}; padding: 6px 10px; border-radius: 6px; border: 1px solid {c["card_border"]}; display: block; font-family: monospace;">{html.escape(str(item["key"]))}</code>'
                         f'</div>'
                         f'<div style="margin: 12px 0; padding: 12px 14px; background: {c["card_bg_elevated"]}; border-radius: 8px; border: 1px solid {c["card_border"]};">'
                         f'<span style="font-size: 10px; font-weight: 800; color: {c["text_muted"]}; letter-spacing: 0.5px; text-transform: uppercase;">DERIVED INSIGHT</span>'
-                        f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px; line-height: 1.5;">{rationale_text}</div>'
+                        f'<div style="font-size: 12px; color: {c["text"]}; margin-top: 4px; line-height: 1.5;">{html.escape(str(rationale_text))}</div>'
                         f'<span style="font-size: 9.5px; color: {c["text_muted"]}; display: block; margin-top: 6px; font-style: italic;">* Frontend-derived heuristic based on observed access counts, size, and retrieval latency. Not an Adaptive DecisionEngine output.</span>'
                         f'</div>'
                         f'<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; text-align: center;">'
@@ -497,3 +514,39 @@ def render_cache_objects_view():
                         f'</div>'
                     )
                     st.markdown(inspector_card_html, unsafe_allow_html=True)
+
+                    if is_live:
+                        inv_col1, inv_col2 = st.columns([2, 1])
+                        with inv_col1:
+                            st.caption(
+                                "Manually evict this object from Tier-1 RAM and its persisted metadata."
+                            )
+                        with inv_col2:
+                            if st.button(
+                                "🗑️ Invalidate",
+                                key=f"invalidate_{selected_key}",
+                                width="stretch",
+                                help="DELETE /cache/objects/{key} — removes this entry now.",
+                            ):
+                                inv_result = invalidate_cache_key(selected_key)
+                                _get_cache_objects_cached.clear()
+                                if inv_result.get("deleted"):
+                                    st.toast(
+                                        f"Invalidated '{selected_key}'", icon="🗑️"
+                                    )
+                                elif inv_result.get("is_live"):
+                                    st.toast(
+                                        f"'{selected_key}' was already gone",
+                                        icon="ℹ️",
+                                    )
+                                else:
+                                    st.toast(
+                                        "Backend unreachable — nothing invalidated",
+                                        icon="⚠️",
+                                    )
+                                st.session_state.pop("selected_diagnostic_key", None)
+                                st.rerun()
+                    else:
+                        st.caption(
+                            "Manual invalidation requires a live backend connection."
+                        )
