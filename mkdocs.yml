@@ -1,0 +1,14 @@
+site_name: AEGIS Documentation
+
+theme:
+  name: material
+
+nav:
+  - Project Overview: project-overview.md
+  - Installation: installation.md
+  - Running the Project: running-the-project.md
+  - Architecture: codebase_architecture.md
+  - Adaptive Decision Engine: adaptive_decision_engine_specification.md
+  - Cache Consistency: cache_consistency_specification.md
+  - Data Store Testing: data-store-testing.md
+  - Monitoring: monitoring.md

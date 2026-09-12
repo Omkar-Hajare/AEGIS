@@ -1,3 +1,3 @@
 ## Documentation
 
-[View complete documentation](docs/README.md)
+[View documentation](docs/project-overview.md)
