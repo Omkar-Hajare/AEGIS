@@ -136,6 +136,26 @@ def get_product(
         cache_manager.record_hit(cache_key)
         CACHE_HITS.inc()
 
+        if isinstance(db, Session):
+            try:
+                repo = CacheMetadataRepository(db)
+                repo.record_hit(cache_key)
+                db.commit()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Failed to record persistent cache hit for '%s': %s",
+                    cache_key,
+                    exc,
+                )
+                try:
+                    db.rollback()
+                except Exception as rollback_exc:  # noqa: BLE001
+                    logger.debug(
+                        "Rollback failed for cache hit metadata '%s': %s",
+                        cache_key,
+                        rollback_exc,
+                    )
+
         return cached_data
 
     telemetry_collector.record_cache_miss()
@@ -192,6 +212,26 @@ def get_recommendation(
         telemetry_collector.record_key_access(cache_key, hit=True)
         cache_manager.record_hit(cache_key)
         CACHE_HITS.inc()
+
+        if isinstance(db, Session):
+            try:
+                repo = CacheMetadataRepository(db)
+                repo.record_hit(cache_key)
+                db.commit()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Failed to record persistent cache hit for '%s': %s",
+                    cache_key,
+                    exc,
+                )
+                try:
+                    db.rollback()
+                except Exception as rollback_exc:  # noqa: BLE001
+                    logger.debug(
+                        "Rollback failed for cache hit metadata '%s': %s",
+                        cache_key,
+                        rollback_exc,
+                    )
 
         return cached_data
 

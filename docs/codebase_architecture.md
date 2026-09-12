@@ -80,7 +80,7 @@ VH26-Satyagrah/
 ├── contracts/schemas/               Frozen v1 Pydantic contracts shared by every layer
 ├── demo/                            Standalone CLI demo of the adaptive pipeline
 ├── docs/                            Specifications and this file
-├── frontend/                        Streamlit "Adaptive Cache Control Center" UI
+├── frontend/                        Streamlit "AEGIS — Adaptive Cache Control Center" UI
 │   ├── components/                   Reusable UI widgets (cards, charts, badges, navbar)
 │   ├── mocks/                        Offline fallback data when backend is unreachable
 │   ├── services/                     HTTP client(s) to the FastAPI backend
@@ -316,7 +316,7 @@ These are intentionally generic — no product schema, no vendor field, no platf
 
 ---
 
-## 8. `frontend/` — Streamlit UI ("Adaptive Cache Control Center")
+## 8. `frontend/` — Streamlit UI ("AEGIS — Adaptive Cache Control Center")
 
 | Path | Contents |
 |---|---|

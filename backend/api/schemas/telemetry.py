@@ -27,11 +27,25 @@ class TelemetryObservationResponse(BaseModel):
         default_factory=dict,
         description="Per-key access counts from the immediately preceding completed observation window",
     )
+    cache_hit_ratio: float | None = Field(
+        default=None,
+        description="Canonical cache hit ratio percentage (0.0 - 100.0)",
+    )
+    observation_window_start: datetime | None = Field(
+        default=None,
+        description="Observation window start timestamp",
+    )
+    observation_window_end: datetime | None = Field(
+        default=None,
+        description="Observation window end timestamp",
+    )
     timestamp: datetime = Field(..., description="UTC timestamp of the observation snapshot")
 
     @classmethod
     def from_observation(cls, obs: Observation) -> "TelemetryObservationResponse":
         """Explicit boundary conversion from internal Observation dataclass to API schema."""
+        total_cache_ops = obs.cache_hits + obs.cache_misses
+        ratio = round((obs.cache_hits / total_cache_ops) * 100.0, 2) if total_cache_ops > 0 else 0.0
         return cls(
             version="v1",
             request_rate=obs.request_rate,
@@ -46,7 +60,21 @@ class TelemetryObservationResponse(BaseModel):
             current_window_access_counts=dict(obs.current_window_access_counts),
             previous_window_access_counts=dict(obs.previous_window_access_counts),
             timestamp=obs.timestamp,
+            cache_hit_ratio=min(100.0, max(0.0, ratio)),
+            observation_window_start=getattr(obs, "window_start", None),
+            observation_window_end=obs.timestamp,
         )
+
+
+class CacheHitRatioResponse(BaseModel):
+    """Public API response model representing canonical aggregated cache hit ratio metrics."""
+
+    total_requests: int = Field(..., description="Total requests during the observation window")
+    cache_hits: int = Field(..., description="Aggregated cache hits during the observation window")
+    cache_misses: int = Field(..., description="Aggregated cache misses during the observation window")
+    cache_hit_ratio: float = Field(..., description="Aggregated cache hit ratio percentage (0.0 - 100.0)")
+    observation_window_start: datetime = Field(..., description="Start of observation window")
+    observation_window_end: datetime = Field(..., description="End of observation window")
 
 
 class WorkloadStateResponse(BaseModel):

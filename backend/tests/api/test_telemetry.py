@@ -10,6 +10,11 @@ from telemetry.collector import telemetry_collector
 
 def call_endpoint(method: str, path: str) -> tuple[int, dict[str, Any]]:
     """In-process standard ASGI caller for testing FastAPI endpoints without external dependencies."""
+    query_string = b""
+    if "?" in path:
+        path, qs = path.split("?", 1)
+        query_string = qs.encode("ascii")
+
     scope = {
         "type": "http",
         "asgi": {"version": "3.0"},
@@ -17,7 +22,7 @@ def call_endpoint(method: str, path: str) -> tuple[int, dict[str, Any]]:
         "method": method,
         "path": path,
         "raw_path": path.encode("ascii"),
-        "query_string": b"",
+        "query_string": query_string,
         "headers": [],
         "server": ("127.0.0.1", 8000),
     }
@@ -198,6 +203,32 @@ class TestTelemetryAPI(unittest.TestCase):
         self.assertEqual(ss1["object_count"], ss2["object_count"])
         self.assertEqual(ss1["cache_usage_bytes"], ss2["cache_usage_bytes"])
 
+    def test_cache_hit_ratio_endpoint(self):
+        """J. GET /telemetry/cache-hit-ratio returns canonical aggregated metrics."""
+        # Baseline empty
+        status, body = call_endpoint("GET", "/telemetry/cache-hit-ratio")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["total_requests"], 0)
+        self.assertEqual(body["cache_hits"], 0)
+        self.assertEqual(body["cache_misses"], 0)
+        self.assertEqual(body["cache_hit_ratio"], 0.0)
+        self.assertIn("observation_window_start", body)
+        self.assertIn("observation_window_end", body)
+
+        # Generate 1 miss and 1 hit
+        call_endpoint("GET", "/data/product/777")
+        call_endpoint("GET", "/data/product/777")
+
+        status, body = call_endpoint("GET", "/telemetry/cache-hit-ratio?window_seconds=300")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["total_requests"], 2)
+        self.assertEqual(body["cache_hits"], 1)
+        self.assertEqual(body["cache_misses"], 1)
+        self.assertEqual(body["cache_hit_ratio"], 50.0)
+        self.assertIn("observation_window_start", body)
+        self.assertIn("observation_window_end", body)
+
 
 if __name__ == "__main__":
     unittest.main()
+

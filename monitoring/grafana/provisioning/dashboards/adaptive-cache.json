@@ -1,83 +1,360 @@
 {
-  "annotations": { "list": [] },
-  "description": "Adaptive Cache System — Hackathon Jury Demonstration Dashboard",
+  "annotations": {
+    "list": []
+  },
+  "description": "Adaptive Cache System — Real-Time Observability",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
   "links": [],
+  "liveNow": false,
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "adaptive-cache",
+    "hackathon-jury",
+    "monitoring"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Adaptive Cache System",
+  "uid": "adaptive-cache-dashboard",
+  "version": 1,
   "panels": [
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
-      "id": 100,
-      "title": "APPLICATION",
-      "type": "row"
-    },
     {
       "id": 1,
       "title": "Request Rate",
-      "description": "Total HTTP incoming request throughput across endpoints",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "description": "Aggregated rate of incoming HTTP requests across all backend pods",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(requests_total[1m])) by (method, endpoint, status)",
-          "legendFormat": "{{method}} {{endpoint}} ({{status}})"
+          "expr": "sum(rate(requests_total[$__rate_interval])) or vector(0)",
+          "legendFormat": "Request Rate",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2 }
+          "decimals": 1,
+          "noValue": "0 req/s",
+          "color": { "mode": "palette-classic" }
         },
         "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
       "id": 2,
-      "title": "Request Latency (P95 / P99)",
-      "description": "95th and 99th percentile end-to-end HTTP request latency",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "title": "Request Latency P95",
+      "description": "95th percentile end-to-end request latency across all backend pods",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket[1m])) by (le))",
-          "legendFormat": "P95 Latency"
-        },
-        {
-          "expr": "histogram_quantile(0.99, sum(rate(request_latency_seconds_bucket[1m])) by (le))",
-          "legendFormat": "P99 Latency"
+          "expr": "((histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket[$__rate_interval])) by (le)) * 1000) >= 0) or vector(0)",
+          "legendFormat": "P95 Latency",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
-          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }
+          "unit": "ms",
+          "decimals": 1,
+          "noValue": "0 ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 200 },
+              { "color": "red", "value": 500 }
+            ]
+          }
         },
         "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
       "id": 3,
-      "title": "Error Rate (HTTP 4xx / 5xx)",
-      "description": "Percentage of HTTP requests returning client (4xx) or server (5xx) errors",
-      "type": "timeseries",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 9 },
+      "title": "Backend Latency P95",
+      "description": "95th percentile latency for origin retrieval on cache misses",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "(sum(rate(requests_total{status=~\"[45]..\"}[1m])) / sum(rate(requests_total[1m])) * 100) or vector(0)",
-          "legendFormat": "Error Rate (%)"
+          "expr": "((histogram_quantile(0.95, sum(rate(backend_latency_seconds_bucket[$__rate_interval])) by (le)) * 1000) >= 0) or vector(0)",
+          "legendFormat": "Backend P95",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "noValue": "0 ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 300 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Cache Hit Ratio",
+      "description": "Cache hit percentage calculated from aggregated counters over the selected Grafana time range. Uses increase() over $__range for consistency with the Streamlit frontend.",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "((sum(increase(cache_hits_total[$__range])) / clamp_min(sum(increase(cache_hits_total[$__range])) + sum(increase(cache_misses_total[$__range])), 1)) * 100) or vector(0)",
+          "legendFormat": "Hit Ratio",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "min": 0,
-          "custom": { "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2 },
+          "max": 100,
+          "decimals": 1,
+          "noValue": "0%",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "green", "value": 80 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Cache Memory",
+      "description": "Total memory used by cached objects across all backend pods",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(cache_size_bytes) or vector(0)",
+          "legendFormat": "Cache Memory",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "noValue": "0 B",
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 6,
+      "title": "Running Backend Replicas",
+      "description": "Available healthy backend pods currently serving traffic",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(kube_deployment_status_replicas_available{deployment=\"backend\"}) or vector(0)",
+          "legendFormat": "Replicas",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
+      "id": 100,
+      "title": "APPLICATION PERFORMANCE",
+      "type": "row"
+    },
+    {
+      "id": 7,
+      "title": "Request Latency P95",
+      "description": "Real-time 95th percentile HTTP request latency over rolling windows",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "((histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket[$__rate_interval])) by (le)) * 1000) >= 0)",
+          "legendFormat": "P95 Request Latency",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "noValue": "0 ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Backend Latency P50 and P95",
+      "description": "Origin service response latency on cache misses (P50 and P95 in ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 10, "x": 10, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "((histogram_quantile(0.50, sum(rate(backend_latency_seconds_bucket[$__rate_interval])) by (le)) * 1000) >= 0)",
+          "legendFormat": "P50 Backend Latency",
+          "refId": "A"
+        },
+        {
+          "expr": "((histogram_quantile(0.95, sum(rate(backend_latency_seconds_bucket[$__rate_interval])) by (le)) * 1000) >= 0)",
+          "legendFormat": "P95 Backend Latency",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "noValue": "0 ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "HTTP Error Rate",
+      "description": "Percentage of HTTP requests returning 4xx or 5xx errors",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 4, "x": 20, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "(100 * sum(rate(requests_total{status=~\"4..|5..\"}[$__rate_interval])) / clamp_min(sum(rate(requests_total[$__rate_interval])), 1)) or vector(0)",
+          "legendFormat": "Error Rate",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "decimals": 2,
+          "noValue": "0%",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -88,228 +365,331 @@
           }
         },
         "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
-    {
-      "id": 4,
-      "title": "Backend Latency (Origin P50 / P95)",
-      "description": "Origin database/service latency observed during cache misses",
-      "type": "timeseries",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 9 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.50, sum(rate(backend_latency_seconds_bucket[1m])) by (le))",
-          "legendFormat": "P50 Origin Latency"
-        },
-        {
-          "expr": "histogram_quantile(0.95, sum(rate(backend_latency_seconds_bucket[1m])) by (le))",
-          "legendFormat": "P95 Origin Latency"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }
-        },
-        "overrides": []
-      }
-    },
+
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
       "id": 200,
-      "title": "CACHE",
+      "title": "CACHE PERFORMANCE",
       "type": "row"
     },
     {
-      "id": 5,
-      "title": "Cache Hit Ratio",
-      "description": "Current live cache hit ratio from telemetry (hits / total requests)",
-      "type": "gauge",
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 17 },
+      "id": 11,
+      "title": "Cache Hits vs Cache Misses",
+      "description": "Aggregated cache hit and miss rates across all pods (only 2 distinct series)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 14 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "cache_hit_ratio",
-          "legendFormat": "Hit Ratio"
+          "expr": "sum(rate(cache_hits_total[$__rate_interval])) or vector(0)",
+          "legendFormat": "Cache Hits",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(cache_misses_total[$__rate_interval])) or vector(0)",
+          "legendFormat": "Cache Misses",
+          "refId": "B"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 0.5 },
-              { "color": "green", "value": 0.8 }
-            ]
+          "unit": "ops",
+          "decimals": 2,
+          "noValue": "0 ops/s",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "auto"
           }
         },
-        "overrides": []
-      }
-    },
-    {
-      "id": 6,
-      "title": "Cache Hits",
-      "description": "Cache hit rate per second",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 17 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "rate(cache_hits_total[1m])",
-          "legendFormat": "Hits/s"
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Cache Hits" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Cache Misses" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#FF9830", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
         }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": { "drawStyle": "bars", "fillOpacity": 50, "lineWidth": 1 }
-        },
-        "overrides": []
       }
     },
     {
-      "id": 7,
-      "title": "Cache Misses",
-      "description": "Cache miss rate per second (requests forwarded to origin)",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 17 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "rate(cache_misses_total[1m])",
-          "legendFormat": "Misses/s"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": { "drawStyle": "bars", "fillOpacity": 50, "lineWidth": 1 }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 8,
-      "title": "Cache Size",
-      "description": "Current total cached payload size in bytes",
+      "id": 12,
+      "title": "Cache Memory",
+      "description": "Total memory used by cached objects",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 17 },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 14 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "cache_size_bytes",
-          "legendFormat": "Size"
+          "expr": "sum(cache_size_bytes) or vector(0)",
+          "legendFormat": "Cache Memory",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "bytes",
-          "color": { "mode": "palette-classic" }
+          "noValue": "0 B",
+          "color": { "fixedColor": "#8AB8FF", "mode": "fixed" }
         },
         "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
-      "id": 9,
-      "title": "Cache Evictions",
-      "description": "Cache evictions performed. Zero if runtime eviction is not triggered.",
-      "type": "timeseries",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 21 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "rate(cache_evictions_total[1m])",
-          "legendFormat": "Evictions/s"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": { "drawStyle": "line", "fillOpacity": 20 }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
-      "id": 300,
-      "title": "ADAPTIVE SYSTEM",
-      "type": "row"
-    },
-    {
-      "id": 10,
-      "title": "Adaptive Decisions",
-      "description": "Total adaptive decisions evaluated by the intelligent decision engine",
+      "id": 23,
+      "title": "Cached Object Count",
+      "description": "Number of objects currently in the cache",
       "type": "stat",
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 26 },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 14 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "adaptive_decisions_total",
-          "legendFormat": "Total Decisions"
+          "expr": "sum(cache_object_count) or vector(0)",
+          "legendFormat": "Objects",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "mode": "palette-classic" }
+          "decimals": 0,
+          "noValue": "0",
+          "color": { "fixedColor": "#B877D9", "mode": "fixed" }
         },
         "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
-      "id": 11,
-      "title": "Current Workload Request Rate",
-      "description": "Live observed request rate in current observation window feeding WorkloadAnalyzer",
-      "type": "gauge",
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 26 },
+      "id": 24,
+      "title": "Total Cache Hits",
+      "description": "Cumulative cache hits — each hit is a backend call prevented",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 18 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "request_rate_per_second",
-          "legendFormat": "Workload Rate"
+          "expr": "sum(cache_hits_total) or vector(0)",
+          "legendFormat": "Total Hits",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "blue", "value": null },
-              { "color": "green", "value": 10 },
-              { "color": "yellow", "value": 50 },
-              { "color": "red", "value": 100 }
-            ]
-          }
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "color": { "fixedColor": "#73BF69", "mode": "fixed" }
         },
         "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
-      "id": 12,
-      "title": "Capacity Recommendation & Origin Pressure",
-      "description": "Origin latency pressure (ms) informing logical capacity scaling decisions",
+      "id": 25,
+      "title": "Total Cache Misses",
+      "description": "Cumulative cache misses — each miss triggers a backend call",
       "type": "stat",
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 26 },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 18 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "backend_avg_latency_ms",
-          "legendFormat": "Avg Origin Latency"
+          "expr": "sum(cache_misses_total) or vector(0)",
+          "legendFormat": "Total Misses",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "color": { "fixedColor": "#FF9830", "mode": "fixed" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "id": 300,
+      "title": "ADAPTIVE CONTROLLER",
+      "type": "row"
+    },
+    {
+      "id": 13,
+      "title": "Adaptive Decisions / s",
+      "description": "Rate of intelligent cache capacity and eviction policy decisions",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(adaptive_decisions_total[$__rate_interval])) or vector(0)",
+          "legendFormat": "Decisions / s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "decimals": 2,
+          "noValue": "0 ops/s",
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 14,
+      "title": "Cache Evictions",
+      "description": "Total objects evicted by the adaptive eviction policy",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(cache_evictions_total) or vector(0)",
+          "legendFormat": "Evictions",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 15,
+      "title": "Backend Calls Prevented",
+      "description": "Total backend/database queries prevented by serving from cache",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(cache_hits_total) or vector(0)",
+          "legendFormat": "Backend Calls Prevented",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "color": { "fixedColor": "#73BF69", "mode": "fixed" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": 16,
+      "title": "Origin Latency Pressure",
+      "description": "Average backend response latency driving the adaptive controller",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "avg(backend_avg_latency_ms) or vector(0)",
+          "legendFormat": "Origin Pressure",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
+          "decimals": 1,
+          "noValue": "0 ms",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -320,125 +700,160 @@
           }
         },
         "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
-      "id": 13,
-      "title": "Policy / Decision Information",
-      "description": "Visual representation of the closed-loop adaptive control architecture",
+      "id": 17,
+      "title": "Adaptive Architecture",
+      "description": "Closed-loop adaptive feedback architecture",
       "type": "text",
-      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 26 },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 23 },
       "options": {
         "mode": "markdown",
-        "content": "#### Closed-Loop Adaptive Feedback\n\n```\n  Traffic Workload\n         ↓\nTelemetry Observation\n (req/s, hit %, latency)\n         ↓\nWorkload Classification\n(STEADY, SPIKE, READ_HEAVY)\n         ↓\n   Decision Engine\n (Scorer + Capacity Ctrl)\n         ↓\n  Eviction & Resizing\n (LRU/LFU/GDS Priorities)\n```\n\n- **Algorithm**: Multi-factor scoring\n- **Capacity Action**: Dynamic threshold scaling\n- **Eviction Priority**: Least utility cost"
+        "content": "#### Closed-Loop Adaptive Feedback\n\n```text\nRequest → Redis Lookup → Cache HIT or MISS\n→ Backend Retrieval on MISS → Telemetry Collection\n→ Workload Analysis → Adaptive Scoring\n→ Eviction / Capacity Decision → Updated Cache State\n```\n\n*Adaptive decision details available in the Streamlit Decisions view.*\n"
       }
     },
+
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
       "id": 400,
-      "title": "KUBERNETES",
+      "title": "KUBERNETES SCALING",
       "type": "row"
     },
     {
-      "id": 14,
-      "title": "FastAPI Pod Count",
-      "description": "Number of running backend FastAPI pods in Kubernetes",
-      "type": "stat",
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 33 },
+      "id": 18,
+      "title": "Available vs Desired Replicas",
+      "description": "Available healthy backend pods vs Deployment and HPA target replicas",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 28 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "count(kube_pod_status_phase{phase=\"Running\", pod=~\".*(backend|fastapi).*\"}) or count(kube_pod_info{pod=~\".*(backend|fastapi).*\"})",
-          "legendFormat": "Running Pods"
+          "expr": "sum(kube_deployment_status_replicas_available{deployment=\"backend\"}) or vector(0)",
+          "legendFormat": "Available Replicas",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(kube_deployment_spec_replicas{deployment=\"backend\"}) or vector(0)",
+          "legendFormat": "Desired Replicas",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler=\"backend\"}) or vector(0)",
+          "legendFormat": "HPA Desired",
+          "refId": "C"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "noValue": "No Data (Phase 5 K8s Pending)"
+          "decimals": 0,
+          "noValue": "0",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "auto"
+          }
         },
         "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": ["lastNotNull"]
+        }
       }
     },
     {
-      "id": 15,
-      "title": "FastAPI Pods CPU Usage",
-      "description": "CPU consumption of FastAPI backend pods",
+      "id": 19,
+      "title": "Backend CPU Usage",
+      "description": "Aggregated CPU utilization across all backend containers",
       "type": "timeseries",
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 33 },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 28 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\".*(backend|fastapi).*\", container!=\"POD\"}[1m]))",
-          "legendFormat": "CPU Cores"
+          "expr": "(sum(rate(container_cpu_usage_seconds_total{pod=~\"backend-.*\", container!=\"POD\", container!=\"\"}[$__rate_interval])) * 100) or vector(0)",
+          "legendFormat": "Backend CPU",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
-          "noValue": "0",
-          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2 }
+          "unit": "percent",
+          "decimals": 1,
+          "noValue": "0%",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "auto"
+          }
         },
         "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        }
       }
     },
     {
-      "id": 16,
-      "title": "FastAPI Pods Memory Usage",
-      "description": "Working set memory consumption of FastAPI backend pods",
+      "id": 20,
+      "title": "Backend Memory Usage",
+      "description": "Aggregated working-set memory across all backend containers",
       "type": "timeseries",
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 33 },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 28 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{pod=~\".*(backend|fastapi).*\", container!=\"POD\"})",
-          "legendFormat": "Memory"
+          "expr": "sum(container_memory_working_set_bytes{pod=~\"backend-.*\", container!=\"POD\", container!=\"\"}) or vector(0)",
+          "legendFormat": "Working Set Memory",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "bytes",
-          "noValue": "0",
-          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2 }
+          "noValue": "0 B",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "auto"
+          }
         },
         "overrides": []
-      }
-    },
-    {
-      "id": 17,
-      "title": "HPA Replicas (Desired / Current)",
-      "description": "Horizontal Pod Autoscaler target and current replicas. Gracefully indicates pending status if HPA is not yet deployed.",
-      "type": "stat",
-      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 33 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler=~\".*(backend|fastapi).*\"} or kube_hpa_status_current_replicas{hpa=~\".*(backend|fastapi).*\"}",
-          "legendFormat": "Current Replicas"
-        },
-        {
-          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler=~\".*(backend|fastapi).*\"} or kube_hpa_status_desired_replicas{hpa=~\".*(backend|fastapi).*\"}",
-          "legendFormat": "Desired Replicas"
+      },
+      "options": {
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
         }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "noValue": "Pending Phase 5 HPA"
-        },
-        "overrides": []
       }
     }
-  ],
-  "refresh": "5s",
-  "schemaVersion": 39,
-  "tags": ["adaptive-cache", "hackathon-jury", "monitoring"],
-  "templating": { "list": [] },
-  "time": { "from": "now-15m", "to": "now" },
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "Adaptive Cache System",
-  "uid": "adaptive-cache-dashboard",
-  "version": 2
+  ]
 }

@@ -1,16 +1,14 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-
-const BASE_URL = __ENV.BASE_URL || "http://localhost:8001";
-const SLEEP_SECONDS = Number(__ENV.SLEEP_SECONDS || "0.05");
+import { BASE_URL } from "../config.js";
 
 export const options = {
   stages: [
-    { duration: "30s", target: 10 },
-    { duration: "30s", target: 30 },
-    { duration: "30s", target: 50 },
-    { duration: "30s", target: 20 },
-    { duration: "30s", target: 10 },
+    { duration: "10s", target: 20 },
+    { duration: "10s", target: 50 },
+    { duration: "40s", target: 50 },
+    { duration: "10s", target: 20 },
+    { duration: "10s", target: 0 },
   ],
   thresholds: {
     http_req_failed: ["rate<0.01"],
@@ -18,46 +16,31 @@ export const options = {
   },
 };
 
-function randomProductId() {
-  if (Math.random() < 0.8) {
-    return Math.floor(Math.random() * 10) + 1;
-  }
-
-  return Math.floor(Math.random() * 40) + 11;
-}
+const SLEEP_SECONDS =
+  __ENV.SLEEP_SECONDS !== undefined
+    ? parseFloat(__ENV.SLEEP_SECONDS)
+    : 0.01;
 
 export default function () {
+  let path;
+
   if (Math.random() < 0.7) {
-    const productId = randomProductId();
-
-    const response = http.get(
-      `${BASE_URL}/data/product/${productId}`,
-      {
-        tags: {
-          workload: "product",
-        },
-      }
-    );
-
-    check(response, {
-      "product status is 200": (r) => r.status === 200,
-    });
+    // 70% product traffic
+    const productId = `${__VU}-${__ITER}`;
+    path = `/data/product/${productId}`;
   } else {
-    const userId = Math.floor(Math.random() * 1000) + 1;
-
-    const response = http.get(
-      `${BASE_URL}/data/recommendation/${userId}`,
-      {
-        tags: {
-          workload: "recommendation",
-        },
-      }
-    );
-
-    check(response, {
-      "recommendation status is 200": (r) => r.status === 200,
-    });
+    // 30% recommendation traffic
+    const userId = `${__VU}-${__ITER}`;
+    path = `/data/recommendation/${userId}`;
   }
+
+  const response = http.get(`${BASE_URL}${path}`, {
+    tags: { name: path.split("/").slice(0, 3).join("/") + "/{id}" },
+  });
+
+  check(response, {
+    "status is 200": (r) => r.status === 200,
+  });
 
   sleep(SLEEP_SECONDS);
 }

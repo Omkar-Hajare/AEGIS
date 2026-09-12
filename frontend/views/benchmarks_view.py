@@ -19,7 +19,7 @@ def render_benchmarks_view():
         f'Policy Benchmarks & <span style="color: {c["text_muted"]} !important; font-weight: 600;">Empirical Evaluation</span>'
         f'</h1>'
         f'<p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: {c["text_muted"]}; max-width: 820px;">'
-        f'Rigorous empirical head-to-head evaluation of the Adaptive Engine (VH26 Satyagrah) against standard industry eviction algorithms (FIFO, LRU, LFU, GDSF).'
+        f'Rigorous empirical head-to-head evaluation of the Adaptive Engine (AEGIS) against standard industry eviction algorithms (FIFO, LRU, LFU, GDSF).'
         f'</p>'
         f'</div>'
         f'<div style="display: flex; align-items: center; padding-top: 6px;">'

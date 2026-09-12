@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="Adaptive Cache Control Center - Satyagrah",
+    page_title="AEGIS — Adaptive Cache Control Center",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",

@@ -1,4 +1,4 @@
-"""Centralized REST API client for the Adaptive Cache Management System.
+"""Centralized REST API client for AEGIS.
 
 Handles communication with the FastAPI backend, configuration, timeouts,
 and graceful connection error handling without scattering HTTP logic across pages.
@@ -155,7 +155,7 @@ class ApiClient:
                 "status": "ok",
                 "service": data.get(
                     "service",
-                    "Adaptive Cache System",
+                    "AEGIS",
                 ),
                 "version": data.get(
                     "version",
@@ -167,7 +167,7 @@ class ApiClient:
         return {
             "is_live": False,
             "status": "offline",
-            "service": "Adaptive Cache System",
+            "service": "AEGIS",
             "version": "Local Demo Fallback",
             "base_url": self.base_url,
         }
@@ -432,7 +432,7 @@ def get_benchmark_results() -> list[dict[str, Any]]:
                 "cost_per_hour": 13.50,
             },
             {
-                "policy": "Adaptive Engine (Satyagrah)",
+                "policy": "Adaptive Engine (AEGIS)",
                 "hit_rate": 89.6,
                 "latency_p95": 27.3,
                 "backend_calls": 1040,

@@ -1,1 +1,3 @@
-# VH26-Satyagrah
+## Documentation
+
+[View complete documentation](docs/README.md)
