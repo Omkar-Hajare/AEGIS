@@ -65,7 +65,7 @@ def render_top_navbar(current_tab: str = "Overview") -> str:
                 <div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="font-weight: 800; font-size: 14.5px; letter-spacing: -0.3px; color: {c['text']};">
-                            AdaptiveCache
+                            AEGIS
                         </span>
                         <span style="font-size: 9px; font-weight: 700; color: {status_dot_color}; background: {'rgba(255,255,255,0.06)' if c['is_dark'] else 'rgba(0,0,0,0.04)'}; border: 1px solid {c['card_border']}; padding: 1px 5px; border-radius: 4px; letter-spacing: 0.4px;">
                             {status_label}

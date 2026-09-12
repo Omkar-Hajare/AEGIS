@@ -51,7 +51,7 @@ def render_overview_view():
         <div style="margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                 <span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: {'rgba(255, 255, 255, 0.06)' if c['is_dark'] else 'rgba(0, 0, 0, 0.04)'}; color: {c['text_muted']}; border: 1px solid {c['card_border']}; border-radius: 4px; padding: 2px 8px;">
-                    VH26 SATYAGRAH &bull; OBSERVABILITY CONTROL PLANE
+                    AEGIS &bull; OBSERVABILITY CONTROL PLANE
                 </span>
                 <span style="font-size: 11px; color: {c["text_subtle"]};">&bull;</span>
                 <span style="font-size: 11px; font-weight: 700; color: #22C55E;">
@@ -59,7 +59,7 @@ def render_overview_view():
                 </span>
             </div>
             <h1 style="font-size: 2.2rem; font-weight: 800; margin: 0 0 6px 0; letter-spacing: -0.6px; color: {c['text']} !important;">
-                Adaptive Cache <span style="color: {c['text_muted']} !important; font-weight: 600;">Control Center</span>
+                AEGIS &mdash; <span style="color: {c['text_muted']} !important; font-weight: 600;">Adaptive Cache Control Center</span>
             </h1>
             <p style="font-size: 14px; color: {c["text_muted"]}; margin: 0; max-width: 950px; line-height: 1.5;">
                 A context-aware, cost-driven caching engine moving beyond static LRU/LFU heuristics. 

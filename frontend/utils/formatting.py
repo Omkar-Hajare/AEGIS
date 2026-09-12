@@ -1,4 +1,4 @@
-"""Standardized formatting rules for the Adaptive Cache Management System.
+"""Standardized formatting rules for AEGIS.
 
 Strictly enforces human-readable formatting across hit rates, latency, sizes,
 durations, and timestamps while avoiding fake precision or NaN/None errors.

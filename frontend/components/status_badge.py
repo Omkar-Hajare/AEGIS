@@ -1,4 +1,4 @@
-"""Reusable semantic status badges and indicator pills for the Adaptive Cache Control Center."""
+"""Reusable semantic status badges and indicator pills for AEGIS — Adaptive Cache Control Center."""
 
 import streamlit as st
 from frontend.components.styles import get_theme_colors

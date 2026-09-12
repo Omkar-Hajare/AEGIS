@@ -245,7 +245,7 @@ benchmark_results = [
         "eviction_thrash_rate": 7.9,
     },
     {
-        "policy": "Adaptive Engine (VH26)",
+        "policy": "Adaptive Engine (AEGIS)",
         "hit_rate": 89.6,
         "p95_latency_ms": 27.3,
         "backend_calls": 156,
