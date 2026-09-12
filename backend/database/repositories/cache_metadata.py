@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any
 
 import sqlalchemy as sa
@@ -46,6 +47,22 @@ class CacheMetadataRepository:
 
         self.session.flush()
         return model
+
+    def record_hit(self, key: str) -> bool:
+        """Atomically update access_count, hit_count, and last_accessed for an existing key."""
+        now = datetime.now(timezone.utc)
+        stmt = (
+            sa.update(CacheMetadataModel)
+            .where(CacheMetadataModel.key == key)
+            .values(
+                access_count=CacheMetadataModel.access_count + 1,
+                hit_count=CacheMetadataModel.hit_count + 1,
+                last_accessed=now,
+            )
+        )
+        result = self.session.execute(stmt)
+        self.session.flush()
+        return bool(result.rowcount > 0)
 
     def get_by_key(self, key: str) -> CacheObjectMetadata | None:
         """Retrieve metadata for a specific key, returning CacheObjectMetadata or None."""

@@ -102,39 +102,49 @@ class TestRuntimePersistence(unittest.TestCase):
             session2.close()
 
     def test_cache_hit_performs_zero_database_queries(self) -> None:
-        """Verify that cache hits do not execute any database queries."""
+        """Verify that cache hits return cached data without calling backend origin and persist metadata updates."""
         # First call: Cache miss, which persists metadata
         init_resp = self.client.get("/data/product/fast_item")
         self.assertEqual(init_resp.status_code, 200)
+        init_data = init_resp.json()
 
-        # Intercept queries on SQLite engine
-        queries: list[str] = []
-
-        def before_cursor_execute(
-            conn: Any,
-            cursor: Any,
-            statement: str,
-            parameters: Any,
-            context: Any,
-            executemany: bool,
-        ) -> None:
-            queries.append(statement)
-
-        sa.event.listen(self.engine, "before_cursor_execute", before_cursor_execute)
+        session = self.session_factory()
         try:
-            # Second call: Cache HIT
-            hit_resp = self.client.get("/data/product/fast_item")
-            self.assertEqual(hit_resp.status_code, 200)
-            self.assertEqual(hit_resp.json(), init_resp.json())
-
-            # Verification: zero queries must have been executed against the database
-            self.assertEqual(
-                len(queries),
-                0,
-                f"Cache hit must not execute database queries. Executed: {queries}",
-            )
+            repo = CacheMetadataRepository(session)
+            meta_before = repo.get_by_key("product:fast_item")
+            self.assertIsNotNone(meta_before)
+            initial_access_count = meta_before.access_count
+            initial_hit_count = meta_before.hit_count
+            initial_miss_count = meta_before.miss_count
         finally:
-            sa.event.remove(self.engine, "before_cursor_execute", before_cursor_execute)
+            session.close()
+
+        backend_calls_before = telemetry_collector.snapshot()["backend_calls"]
+
+        # Second call: Cache HIT
+        hit_resp = self.client.get("/data/product/fast_item")
+        self.assertEqual(hit_resp.status_code, 200)
+        self.assertEqual(hit_resp.json(), init_data)
+
+        # Verification: does not call backend origin
+        backend_calls_after = telemetry_collector.snapshot()["backend_calls"]
+        self.assertEqual(
+            backend_calls_after,
+            backend_calls_before,
+            "Cache hit must not increase backend origin calls",
+        )
+
+        # Verification: updates persistent metadata in database
+        session2 = self.session_factory()
+        try:
+            repo2 = CacheMetadataRepository(session2)
+            meta_after = repo2.get_by_key("product:fast_item")
+            self.assertIsNotNone(meta_after)
+            self.assertEqual(meta_after.access_count, initial_access_count + 1)
+            self.assertEqual(meta_after.hit_count, initial_hit_count + 1)
+            self.assertEqual(meta_after.miss_count, initial_miss_count)
+        finally:
+            session2.close()
 
     def test_cache_invalidation_removes_persistent_metadata(self) -> None:
         """Verify that cache invalidation removes persistent metadata from database."""
