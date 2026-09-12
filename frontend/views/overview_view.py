@@ -86,11 +86,11 @@ def render_overview_view():
         f'</div>'
         f'<div style="display: flex; align-items: center; gap: 8px;">'
         f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">SOURCE:</span>'
-        f'<span style="font-size: 11px; font-weight: 700; color: {c["text"]}; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.04)"}; border: 1px solid {c["card_border"]}; padding: 2px 8px; border-radius: 4px; font-family: monospace;">GET /telemetry/observation</span>'
+        f'<span style="font-size: 11px; font-weight: 700; color: {c["text"]}; background: {"rgba(255, 255, 255, 0.06)" if c["is_dark"] else "rgba(0, 0, 0, 0.04)"}; border: 1px solid {c["card_border"]}; padding: 2px 8px; border-radius: 4px; font-family: monospace;">GET /telemetry/cache-hit-ratio</span>'
         f'</div>'
         f'<div style="display: flex; align-items: center; gap: 8px;">'
-        f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">WINDOW DURATION:</span>'
-        f'<strong style="font-size: 12px; color: {c["purple"]}; font-weight: 700;">{window_str}</strong>'
+        f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">OBSERVATION WINDOW:</span>'
+        f'<strong style="font-size: 12px; color: {c["purple"]}; font-weight: 700;">{window_str} (ROLLING)</strong>'
         f'</div>'
         f'<div style="display: flex; align-items: center; gap: 8px;">'
         f'<span style="font-size: 11px; font-weight: 700; color: {c["text_muted"]}; text-transform: uppercase;">LAST SYNC:</span>'
@@ -113,8 +113,20 @@ def render_overview_view():
     # --------------------------------------------------
     k1, k2, k3, k4, k5, k6 = st.columns(6)
 
-    hit_rate = obs.get("hit_rate", 0.0)
-    miss_rate = obs.get("miss_rate", 0.0)
+    hits_cnt = obs.get("cache_hits", 0)
+    misses_cnt = obs.get("cache_misses", 0)
+    total_cache_ops = hits_cnt + misses_cnt
+
+    # Canonical calculation: sum(hits) / (sum(hits) + sum(misses)) * 100
+    if total_cache_ops > 0:
+        canonical_hit_pct = min(100.0, max(0.0, round((hits_cnt / total_cache_ops) * 100.0, 1)))
+        canonical_miss_pct = round(100.0 - canonical_hit_pct, 1)
+    else:
+        canonical_hit_pct = 0.0
+        canonical_miss_pct = 0.0
+
+    hit_rate = canonical_hit_pct / 100.0
+    miss_rate = canonical_miss_pct / 100.0
     req_rate = obs.get("request_rate", 0.0)
     latency_ms = obs.get("backend_latency_ms", 0.0)
     backend_calls = obs.get("backend_calls", 0)
@@ -123,11 +135,11 @@ def render_overview_view():
 
     with k1:
         render_metric_card(
-            title="Cache Hit Rate",
-            value=format_percentage(hit_rate),
-            subtitle=f"{obs.get('cache_hits', 0)} hits / {total_reqs} reqs",
-            tag="PRIMARY SLA",
-            tooltip="Ratio of requests served directly from cache without hitting the persistent backend store.",
+            title="Cache Hit Ratio",
+            value=f'{canonical_hit_pct:.1f}% <span style="font-size:12px;font-weight:600;color:{c["text_muted"]};">({window_str})</span>',
+            subtitle=f"{format_int(hits_cnt)} hits / {format_int(total_reqs)} reqs",
+            tag=f"{window_str.upper()} WINDOW",
+            tooltip=f"Canonical cache hit ratio aggregated across all backend pods over the rolling {window_str} observation window.",
             progress_value=min(1.0, max(0.0, float(hit_rate))),
             progress_color="#10B981",
             is_floating=True,
@@ -135,13 +147,13 @@ def render_overview_view():
 
     with k2:
         render_metric_card(
-            title="Cache Miss Rate",
-            value=format_percentage(miss_rate),
-            subtitle=f"{obs.get('cache_misses', 0)} misses recorded",
+            title="Cache Miss Ratio",
+            value=f'{canonical_miss_pct:.1f}% <span style="font-size:12px;font-weight:600;color:{c["text_muted"]};">({window_str})</span>',
+            subtitle=f"{format_int(misses_cnt)} misses recorded",
             tag="PENALTY",
-            tooltip="Ratio of requests requiring expensive backend recompute and retrieval.",
+            tooltip=f"Canonical cache miss ratio aggregated across all backend pods over the rolling {window_str} observation window.",
             progress_value=min(1.0, max(0.0, float(miss_rate))),
-            progress_color=c["rose"] if miss_rate > 0.3 else c["amber"],
+            progress_color=c["rose"] if canonical_miss_pct > 30.0 else c["amber"],
         )
 
     with k3:
@@ -197,7 +209,7 @@ def render_overview_view():
         st.markdown(
             f"""<div style="margin-top: 28px; margin-bottom: 10px;">
                 <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: {c['text']};">
-                    Current Window HIT vs MISS Distribution
+                    Rolling {window_str} Window HIT vs MISS Distribution
                 </h3>
             </div>""",
             unsafe_allow_html=True,

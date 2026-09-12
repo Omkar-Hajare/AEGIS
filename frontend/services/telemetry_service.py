@@ -4,6 +4,7 @@ Provides read-only observation, workload, and system state snapshots,
 as well as window reset triggers adhering strictly to backend contracts.
 """
 
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import streamlit as st
@@ -11,34 +12,92 @@ import streamlit as st
 from frontend.mocks.data import cache_stats
 from frontend.services.api_client import api_client
 
-# Short TTL so rapid successive Streamlit reruns (e.g. multiple widgets
-# reading telemetry within the same interaction) share one backend round
-# trip, without the dashboard ever looking more than ~2s stale.
-_LIVE_TTL_SECONDS = 2
+# 5-second TTL matches Grafana's 5s refresh interval and Prometheus scrape interval.
+_LIVE_TTL_SECONDS = 5
 
 
 @st.cache_data(ttl=_LIVE_TTL_SECONDS, show_spinner=False)
-def get_telemetry_observation() -> dict[str, Any]:
-    """Fetch live time-windowed observation from GET /telemetry/observation.
+def get_cache_hit_ratio(window_seconds: float = 300.0) -> dict[str, Any]:
+    """Fetch canonical aggregated cache hit ratio from GET /telemetry/cache-hit-ratio.
 
-    Falls back gracefully to mock trace if backend is unreachable.
+    Calculated from aggregated counters across all backend pods over the observation window.
+    Falls back gracefully to demo calculations if backend is unreachable.
     """
-    data = api_client.get("telemetry/observation")
+    data = api_client.get(f"telemetry/cache-hit-ratio?window_seconds={window_seconds}")
     if data:
         data["is_live"] = True
         return data
+
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(seconds=window_seconds)
+    total_obj = cache_stats.get("total_objects", 1240)
+    hits = int(total_obj * 0.896)
+    misses = int(total_obj * 0.104)
+    total = hits + misses
+    ratio = round((hits / total) * 100.0, 2) if total > 0 else 0.0
+
+    return {
+        "total_requests": total,
+        "cache_hits": hits,
+        "cache_misses": misses,
+        "cache_hit_ratio": min(100.0, max(0.0, ratio)),
+        "observation_window_start": start.isoformat(),
+        "observation_window_end": now.isoformat(),
+        "window_seconds": window_seconds,
+        "is_live": False,
+    }
+
+
+@st.cache_data(ttl=_LIVE_TTL_SECONDS, show_spinner=False)
+def get_telemetry_observation(window_seconds: float = 300.0) -> dict[str, Any]:
+    """Fetch live time-windowed observation from GET /telemetry/observation.
+
+    Integrates canonical aggregated cache hit ratio from all backend pods over the
+    selected observation window. Falls back gracefully to mock trace if backend is unreachable.
+    """
+    data = api_client.get("telemetry/observation")
+    hit_ratio_data = get_cache_hit_ratio(window_seconds=window_seconds)
+
+    if data:
+        data["is_live"] = True
+        # Overlay canonical aggregated hit/miss metrics across all pods for the selected window
+        data["cache_hits"] = hit_ratio_data["cache_hits"]
+        data["cache_misses"] = hit_ratio_data["cache_misses"]
+        data["total_requests"] = hit_ratio_data["total_requests"]
+        data["cache_hit_ratio"] = hit_ratio_data["cache_hit_ratio"]
+        data["hit_rate"] = hit_ratio_data["cache_hit_ratio"] / 100.0
+        data["miss_rate"] = (
+            (100.0 - hit_ratio_data["cache_hit_ratio"]) / 100.0
+            if (hit_ratio_data["cache_hits"] + hit_ratio_data["cache_misses"]) > 0
+            else 0.0
+        )
+        data["observation_window_start"] = hit_ratio_data["observation_window_start"]
+        data["observation_window_end"] = hit_ratio_data["observation_window_end"]
+        data["window_seconds"] = window_seconds
+        return data
+
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(seconds=window_seconds)
+    total_obj = cache_stats.get("total_objects", 1240)
+    hits = hit_ratio_data.get("cache_hits", int(total_obj * 0.896))
+    misses = hit_ratio_data.get("cache_misses", int(total_obj * 0.104))
+    total = hits + misses
+    ratio = hit_ratio_data.get("cache_hit_ratio", round((hits / total) * 100.0, 2) if total > 0 else 0.0)
 
     # Honest demo fallback
     return {
         "version": "v1-demo",
         "request_rate": cache_stats.get("requests_per_second", 1250) / 60.0,
-        "hit_rate": cache_stats.get("hit_rate", 89.6) / 100.0,
-        "miss_rate": (100.0 - cache_stats.get("hit_rate", 89.6)) / 100.0,
+        "hit_rate": ratio / 100.0,
+        "miss_rate": (100.0 - ratio) / 100.0 if total > 0 else 0.0,
+        "cache_hit_ratio": ratio,
         "backend_latency_ms": cache_stats.get("p95_latency_ms", 27.3),
-        "window_seconds": 60.0,
-        "total_requests": cache_stats.get("total_objects", 1240),
-        "cache_hits": int(cache_stats.get("total_objects", 1240) * 0.896),
-        "cache_misses": int(cache_stats.get("total_objects", 1240) * 0.104),
+        "window_seconds": window_seconds,
+        "total_requests": total,
+        "cache_hits": hits,
+        "cache_misses": misses,
+        "observation_window_start": start.isoformat(),
+        "observation_window_end": now.isoformat(),
         "backend_calls": cache_stats.get("backend_calls", 156),
         "current_window_access_counts": {
             "product:101": 42,
@@ -46,7 +105,7 @@ def get_telemetry_observation() -> dict[str, Any]:
             "pricing:surge": 19,
         },
         "previous_window_access_counts": {},
-        "timestamp": "2026-09-04T21:00:00Z",
+        "timestamp": now.isoformat(),
         "is_live": False,
     }
 
@@ -101,6 +160,7 @@ def reset_telemetry_window() -> dict[str, Any]:
     # Drop the short-lived telemetry cache so the reset is reflected on the
     # very next read instead of serving a pre-reset snapshot for up to 2s.
     get_telemetry_observation.clear()
+    get_cache_hit_ratio.clear()
     get_workload_state.clear()
     get_system_state.clear()
     if result:
