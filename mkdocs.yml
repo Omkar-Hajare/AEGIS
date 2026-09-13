@@ -1,7 +1,15 @@
 site_name: AEGIS Documentation
+site_url: https://omkar-hajare.github.io/AEGIS/
 
 theme:
   name: material
+
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
 
 nav:
   - Project Overview: project-overview.md
