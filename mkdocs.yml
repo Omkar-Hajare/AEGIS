@@ -1,0 +1,21 @@
+site_name: AEGIS Documentation
+site_url: https://omkar-hajare.github.io/AEGIS/
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+
+nav:
+  - Project Overview: index.md
+  - Installation: installation.md
+  - Running the Project: running-the-project.md
+  - Architecture: codebase_architecture.md
+  - Adaptive Decision Engine: adaptive_decision_engine_specification.md
+  - Cache Consistency: cache_consistency_specification.md
+  - Data Store Testing: data-store-testing.md
+  - Monitoring: monitoring.md

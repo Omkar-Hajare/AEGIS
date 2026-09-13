@@ -1,19 +1,3 @@
-# AEGIS
-
-## Documentation
-View on MkDocs
-[Open AEGIS Documentation](https://omkar-hajare.github.io/AEGIS/)
-
-- [Installation](docs/installation.md)
-- [Running the Project](docs/running-the-project.md)
-- [Architecture](docs/codebase_architecture.md)
-- [Adaptive Decision Engine](docs/adaptive_decision_engine_specification.md)
-- [Cache Consistency](docs/cache_consistency_specification.md)
-- [Data Store Testing](docs/data-store-testing.md)
-- [Monitoring](docs/monitoring.md)
-
----
-
 # Adaptive Cache System — Project Overview
 
 The Adaptive Cache System is a closed-loop, telemetry-driven caching and scaling tier designed for high-concurrency, data-intensive web applications. It replaces static, one-dimensional caching heuristics with a continuous mathematical heuristic engine that balances access frequency, recency, retrieval cost, popularity trends, and object size to optimize cache retention, proactive refresh, and capacity allocation.
