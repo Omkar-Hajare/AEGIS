@@ -13,7 +13,7 @@ To ensure scientific rigor, comparability, and reproducibility, the benchmark en
 - **Deterministic Execution**: All stochastic operations (Zipfian key selection, popularity drift, object assignment) use a fixed random seed (`seed=42`).
 - **Warm-Up Phase Separation**: Every algorithm executes 1,000 warm-up requests to populate initial cache lines. All internal telemetry and hit/miss counters are explicitly reset (`reset_metrics()`) before beginning the 4,000-request measurement window. Cold-start initialization noise is completely excluded from measured metrics.
 - **Identical Evaluation Environment**: For every workload scenario, LRU, LFU, GDS, and AEGIS process the exact same sequence of requests, payload sizes, backend retrieval penalties, and memory capacity limits.
-- **Zero Fabrication**: All reported metrics are directly computed by [`benchmark/runner.py`](../benchmark/runner.py) and serialized into raw machine-readable JSON and CSV logs.
+- **Zero Fabrication**: All reported metrics are directly computed by `benchmark/runner.py` and serialized into raw machine-readable JSON and CSV logs.
 
 ### Evaluated Workload Scenarios
 
