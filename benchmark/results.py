@@ -83,6 +83,11 @@ def compute_benchmark_metrics(
     peak_cache_usage_bytes: int,
     estimated_cost: float = 0.0,
     throughput_rps: float = 0.0,
+    modeled_origin_penalty_ms: float | None = None,
+    configured_arrival_rate_rps: float | None = None,
+    measured_wall_clock_runtime_ms: float = 0.0,
+    measured_processing_throughput_rps: float = 0.0,
+    simulated_latency_ms: float | None = None,
 ) -> BenchmarkMetrics:
     """Compute and construct a validated BenchmarkMetrics model.
 
@@ -97,6 +102,11 @@ def compute_benchmark_metrics(
         peak_cache_usage_bytes: Maximum cache bytes used.
         estimated_cost: Modeled total cost from project CostModel.
         throughput_rps: Requests processed per second.
+        modeled_origin_penalty_ms: Explicit modeled origin retrieval penalty in ms.
+        configured_arrival_rate_rps: Configured synthetic trace arrival pace.
+        measured_wall_clock_runtime_ms: Monotonically measured execution duration in ms.
+        measured_processing_throughput_rps: Achieved requests processed per wall-clock second.
+        simulated_latency_ms: Mean simulated request latency in ms.
 
     Returns:
         Frozen BenchmarkMetrics instance.
@@ -116,6 +126,10 @@ def compute_benchmark_metrics(
         p95_latency = 0.0
         p99_latency = 0.0
 
+    eff_penalty = modeled_origin_penalty_ms if modeled_origin_penalty_ms is not None else estimated_cost
+    eff_arrival = configured_arrival_rate_rps if configured_arrival_rate_rps is not None else throughput_rps
+    eff_sim_lat = simulated_latency_ms if simulated_latency_ms is not None else avg_latency
+
     return BenchmarkMetrics(
         total_requests=total_requests,
         cache_hits=cache_hits,
@@ -126,14 +140,19 @@ def compute_benchmark_metrics(
         backend_requests_prevented=cache_hits,
         backend_latency_total_ms=backend_latency_total_ms,
         average_latency_ms=avg_latency,
+        simulated_latency_ms=eff_sim_lat,
         p50_latency_ms=p50_latency,
         p95_latency_ms=p95_latency,
         p99_latency_ms=p99_latency,
         eviction_count=eviction_count,
         cache_capacity_bytes=cache_capacity_bytes,
         peak_cache_usage_bytes=peak_cache_usage_bytes,
-        estimated_cost=estimated_cost,
-        throughput_rps=throughput_rps,
+        estimated_cost=eff_penalty,
+        modeled_origin_penalty_ms=eff_penalty,
+        throughput_rps=eff_arrival,
+        configured_arrival_rate_rps=eff_arrival,
+        measured_wall_clock_runtime_ms=measured_wall_clock_runtime_ms,
+        measured_processing_throughput_rps=measured_processing_throughput_rps,
     )
 
 

@@ -213,6 +213,8 @@ class CacheSimulator:
             created_at=event.timestamp,
         )
         self._cache[event.key] = new_obj
+        if hasattr(self.policy, "on_insert"):
+            self.policy.on_insert(event.key, new_obj, self._cache)
 
         # Update peak usage
         new_usage = sum(o.size_bytes for o in self._cache.values())
@@ -224,12 +226,18 @@ class CacheSimulator:
         self,
         duration_seconds: float | None = None,
         cost_profile: CostProfile | str | None = None,
+        measured_wall_clock_runtime_ms: float = 0.0,
+        measured_processing_throughput_rps: float = 0.0,
+        configured_arrival_rate_rps: float | None = None,
     ) -> BenchmarkMetrics:
         """Compute and return the current BenchmarkMetrics.
 
         Args:
             duration_seconds: Measurement duration in seconds for throughput and cost.
             cost_profile: CostProfile instance or registered name from backend.cost.
+            measured_wall_clock_runtime_ms: Optional measured elapsed wall-clock time in ms.
+            measured_processing_throughput_rps: Optional measured processing throughput in req/s.
+            configured_arrival_rate_rps: Optional synthetic trace configured arrival rate in req/s.
 
         Returns:
             Validated BenchmarkMetrics model.
@@ -261,9 +269,13 @@ class CacheSimulator:
         total_estimated_cost = round(miss_cost + ram_cost, 4)
 
         throughput = (
-            round(self._total_requests / dur_s, 2)
-            if (duration_seconds is not None and duration_seconds > 0 and self._total_requests > 0)
-            else 0.0
+            configured_arrival_rate_rps
+            if configured_arrival_rate_rps is not None
+            else (
+                round(self._total_requests / dur_s, 2)
+                if (duration_seconds is not None and duration_seconds > 0 and self._total_requests > 0)
+                else 0.0
+            )
         )
 
         return compute_benchmark_metrics(
@@ -276,7 +288,11 @@ class CacheSimulator:
             cache_capacity_bytes=self._capacity_bytes,
             peak_cache_usage_bytes=self._peak_cache_usage_bytes,
             estimated_cost=total_estimated_cost,
+            modeled_origin_penalty_ms=total_estimated_cost,
             throughput_rps=throughput,
+            configured_arrival_rate_rps=throughput,
+            measured_wall_clock_runtime_ms=measured_wall_clock_runtime_ms,
+            measured_processing_throughput_rps=measured_processing_throughput_rps,
         )
 
     def get_result(

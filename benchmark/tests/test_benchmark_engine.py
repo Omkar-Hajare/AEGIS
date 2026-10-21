@@ -573,3 +573,32 @@ class TestSerializationAndFormatting:
 
         deserialized = deserialize_suite_result(serialized)
         assert deserialized == suite
+
+
+class TestReproducibleBenchmarkRunner:
+    """Tests for benchmark.run_reproducible_benchmark execution and argument routing."""
+
+    def test_run_benchmark_explicit_file_paths(self, tmp_path: Path) -> None:
+        from benchmark.run_reproducible_benchmark import run_benchmark
+
+        out_json = tmp_path / "custom_results.json"
+        out_csv = tmp_path / "custom_results.csv"
+        out_report = tmp_path / "custom_report.md"
+
+        payload = run_benchmark(
+            seed=42,
+            warmup_requests=20,
+            measured_requests=50,
+            output_dir=str(tmp_path),
+            output_json=out_json,
+            output_csv=out_csv,
+            output_report=out_report,
+        )
+
+        assert out_json.exists()
+        assert out_csv.exists()
+        assert out_report.exists()
+        assert len(payload["raw_results"]) == 12  # 3 workloads * 4 policies
+
+        report_text = out_report.read_text(encoding="utf-8")
+        assert "+-" not in report_text, "Markdown report should not format negative values as +-"

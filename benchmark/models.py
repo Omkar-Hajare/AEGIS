@@ -58,11 +58,55 @@ class BenchmarkMetrics(BaseModel):
         ..., ge=0, description="Maximum cache memory usage in bytes observed"
     )
     estimated_cost: float = Field(
-        default=0.0, ge=0.0, description="Estimated total operational cost based on project CostModel"
+        default=0.0, ge=0.0, description="Estimated total operational cost based on project CostModel (backward-compatible alias)"
+    )
+    modeled_origin_penalty_ms: float = Field(
+        default=0.0, ge=0.0, description="Modeled origin retrieval latency penalty in ms"
     )
     throughput_rps: float = Field(
-        default=0.0, ge=0.0, description="Simulated or measured throughput in requests per second"
+        default=0.0, ge=0.0, description="Simulated or configured throughput in requests per second (backward-compatible alias)"
     )
+    configured_arrival_rate_rps: float = Field(
+        default=0.0, ge=0.0, description="Configured synthetic workload arrival rate in requests per second"
+    )
+    simulated_latency_ms: float = Field(
+        default=0.0, ge=0.0, description="Mean simulated request latency in ms"
+    )
+    measured_wall_clock_runtime_ms: float = Field(
+        default=0.0, ge=0.0, description="Monotonically measured execution duration in ms"
+    )
+    measured_processing_throughput_rps: float = Field(
+        default=0.0, ge=0.0, description="Completed requests divided by monotonic execution time in requests per second"
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _sync_metric_aliases(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # Sync cost / origin penalty
+            cost = data.get("estimated_cost")
+            penalty = data.get("modeled_origin_penalty_ms")
+            if cost is not None and penalty is None:
+                data["modeled_origin_penalty_ms"] = cost
+            elif penalty is not None and cost is None:
+                data["estimated_cost"] = penalty
+
+            # Sync throughput / arrival rate
+            t_rps = data.get("throughput_rps")
+            arr_rps = data.get("configured_arrival_rate_rps")
+            if t_rps is not None and arr_rps is None:
+                data["configured_arrival_rate_rps"] = t_rps
+            elif arr_rps is not None and t_rps is None:
+                data["throughput_rps"] = arr_rps
+
+            # Sync simulated latency
+            avg_lat = data.get("average_latency_ms")
+            sim_lat = data.get("simulated_latency_ms")
+            if avg_lat is not None and sim_lat is None:
+                data["simulated_latency_ms"] = avg_lat
+            elif sim_lat is not None and avg_lat is None:
+                data["average_latency_ms"] = sim_lat
+        return data
 
     @field_validator(
         "total_requests",
@@ -81,7 +125,12 @@ class BenchmarkMetrics(BaseModel):
         "cache_capacity_bytes",
         "peak_cache_usage_bytes",
         "estimated_cost",
+        "modeled_origin_penalty_ms",
         "throughput_rps",
+        "configured_arrival_rate_rps",
+        "simulated_latency_ms",
+        "measured_wall_clock_runtime_ms",
+        "measured_processing_throughput_rps",
         mode="before",
     )
     @classmethod
