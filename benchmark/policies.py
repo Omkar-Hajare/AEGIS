@@ -67,6 +67,14 @@ class BenchmarkPolicy(ABC):
     ) -> None:
         """Callback invoked when a request misses the cache."""
 
+    def on_insert(
+        self,
+        key: str,
+        obj: CacheObject,
+        cache: Mapping[str, CacheObject] | None = None,
+    ) -> None:
+        """Callback invoked when an object is admitted into the cache."""
+
     def reset(self) -> None:
         """Reset internal telemetry and state between benchmark runs."""
 
@@ -136,7 +144,7 @@ class LFUPolicyAdapter(BenchmarkPolicy):
 
 
 class GDSPolicyAdapter(BenchmarkPolicy):
-    """Benchmark adapter for the Greedy-Dual-Size (GDS) policy."""
+    """Benchmark adapter for the Greedy-Dual-Size (GDS) policy with dynamic inflation clock."""
 
     def __init__(self, policy: GDSPolicy | None = None) -> None:
         """Initialize with an optional GDSPolicy instance."""
@@ -146,6 +154,30 @@ class GDSPolicyAdapter(BenchmarkPolicy):
     def name(self) -> str:
         """Return policy name 'GDS'."""
         return "GDS"
+
+    @property
+    def policy(self) -> GDSPolicy:
+        """Return the underlying GDSPolicy instance."""
+        return self._policy
+
+    def on_hit(
+        self,
+        key: str,
+        event: ScenarioEvent,
+        cache: Mapping[str, CacheObject],
+    ) -> None:
+        """Update object priority upon cache hit."""
+        if key in cache:
+            self._policy.on_hit(key, cache[key])
+
+    def on_insert(
+        self,
+        key: str,
+        obj: CacheObject,
+        cache: Mapping[str, CacheObject] | None = None,
+    ) -> None:
+        """Assign object priority upon cache admission."""
+        self._policy.on_insert(key, obj)
 
     def select_evictions(
         self,
@@ -160,6 +192,17 @@ class GDSPolicyAdapter(BenchmarkPolicy):
             return self._policy._rank_keys(cache)
         return self._policy.select_evictions(cache, target_capacity_bytes)
 
+    def reset(self) -> None:
+        """Reset GDS inflation clock and priority state."""
+        self._policy.reset()
+
+    def get_metadata(self) -> dict[str, Any]:
+        """Return GDS policy metadata."""
+        return {
+            "clock_L": round(self._policy.clock_L, 6),
+            "tracked_objects": len(self._policy.priorities),
+        }
+
 
 class AdaptivePolicyAdapter(BenchmarkPolicy):
     """Benchmark adapter for the unified Adaptive Decision Engine.
@@ -167,14 +210,12 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
     Feeds the simulated cache state, access history, and telemetry into
     DecisionEngine and applies retention-score eviction.
 
-    WorkloadAnalyzer classification relies on two metric keys supplied via
-    WorkloadState.metrics:
-    - ``request_rate_baseline``: required by the SPIKE rule.
-    - ``popularity_shift_score``: required by the POPULARITY_SHIFT rule.
-
-    These are derived at eviction time from ScenarioEvent.metadata using
-    ``_build_workload_metrics()``. Without this, every call classifies as
-    STEADY because the WorkloadAnalyzer rules silently guard on key presence.
+    Evaluates decisions purely on runtime-observable telemetry:
+    - Recent request rate and historical rate baseline for spike detection
+    - Dynamic working-set churn and key overlap for popularity shift detection
+    - Rolling window hit/miss rates and backend latency
+    Does NOT access generator-internal event metadata (e.g. shift_progress,
+    spike_multiplier), enforcing strict black-box information boundaries.
     """
 
     def __init__(
@@ -198,6 +239,9 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
 
         self._current_window_accesses: dict[str, int] = {}
         self._previous_window_accesses: dict[str, int] = {}
+        self._baseline_hot_keys: set[str] = set()
+        self._baseline_request_rate: float = 100.0
+        self._window_requests: int = 0
         self._window_start_time: datetime | None = None
 
         self._requests: int = 0
@@ -234,7 +278,20 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
         elapsed = (timestamp - self._window_start_time).total_seconds()
         if elapsed >= self.window_seconds:
             self._previous_window_accesses = dict(self._current_window_accesses)
+            if not self._baseline_hot_keys and self._previous_window_accesses:
+                sorted_keys = sorted(
+                    self._previous_window_accesses.keys(),
+                    key=lambda k: self._previous_window_accesses[k],
+                    reverse=True,
+                )
+                self._baseline_hot_keys = set(sorted_keys[:15])
+
+            obs_rate = self._window_requests / max(0.1, elapsed)
+            if obs_rate < 1.5 * self._baseline_request_rate:
+                self._baseline_request_rate = 0.9 * self._baseline_request_rate + 0.1 * obs_rate
+
             self._current_window_accesses = {}
+            self._window_requests = 0
             self._window_start_time = timestamp
 
     def on_hit(
@@ -244,6 +301,7 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
         cache: Mapping[str, CacheObject],
     ) -> None:
         """Record hit telemetry and update access window."""
+        self._window_requests += 1
         self._update_window(event.timestamp)
         self.rolling_telemetry.record_hit(event.timestamp, key=key, latency_ms=0.0)
         self._requests += 1
@@ -259,6 +317,7 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
         cache: Mapping[str, CacheObject],
     ) -> None:
         """Record miss telemetry and update access window."""
+        self._window_requests += 1
         self._update_window(event.timestamp)
         self.rolling_telemetry.record_miss(
             event.timestamp, key=key, latency_ms=event.backend_latency_ms
@@ -270,54 +329,6 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
         self._current_window_accesses[key] = (
             self._current_window_accesses.get(key, 0) + 1
         )
-
-    @staticmethod
-    def _build_workload_metrics(
-        event: ScenarioEvent | None,
-    ) -> dict[str, Any] | None:
-        """Derive WorkloadState.metrics from ScenarioEvent metadata.
-
-        Extracts the signal fields required by WorkloadAnalyzer classification:
-
-        - ``request_rate_baseline`` — SPIKE rule prerequisite. Computed as
-          ``event.request_rate / spike_multiplier`` when ``spike_multiplier > 1``.
-          For baseline and recovery phases (multiplier == 1.0), the key is omitted
-          so those phases do not trigger SPIKE classification.
-        - ``popularity_shift_score`` — POPULARITY_SHIFT rule prerequisite. Set
-          directly from ``shift_progress`` in event metadata. Values above 0.7
-          (transition and final phases) trigger POPULARITY_SHIFT classification.
-
-        Returns None when no relevant metadata is present (e.g. steady scenario).
-        """
-        if event is None or event.metadata is None:
-            return None
-
-        meta = event.metadata
-        metrics: dict[str, Any] = {}
-
-        # SPIKE signal: infer baseline rate from spike_multiplier on the event.
-        # During the spike phase spike_multiplier > 1 so baseline < request_rate,
-        # satisfying request_rate >= 1.5 * baseline for standard multipliers (3x).
-        # During baseline/recovery phases spike_multiplier == 1.0 so no entry is
-        # added and the SPIKE rule is not triggered.
-        spike_mult = meta.get("spike_multiplier")
-        if (
-            isinstance(spike_mult, (int, float))
-            and not isinstance(spike_mult, bool)
-            and spike_mult > 1.0
-            and event.request_rate > 0.0
-        ):
-            metrics["request_rate_baseline"] = event.request_rate / spike_mult
-
-        # POPULARITY_SHIFT signal: shift_progress encodes the transition alpha.
-        # Values >= 0.7 (late transition and final phases) exceed the threshold.
-        shift_progress = meta.get("shift_progress")
-        if isinstance(shift_progress, (int, float)) and not isinstance(
-            shift_progress, bool
-        ):
-            metrics["popularity_shift_score"] = float(shift_progress)
-
-        return metrics if metrics else None
 
     def select_evictions(
         self,
@@ -346,11 +357,24 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
         min_cap = self.min_capacity_bytes or base_cap
         max_cap = self.max_capacity_bytes or base_cap
 
-        # Supply workload classifier metrics derived from scenario event metadata.
-        # Augment with rolling telemetry observations for explainability and downstream use.
-        workload_metrics = self._build_workload_metrics(event)
-        if workload_metrics is None:
-            workload_metrics = {}
+        # Autonomous derivation of workload metrics without reading generator metadata
+        workload_metrics: dict[str, Any] = {}
+
+        # 1. Autonomous popularity shift detection based on working set turnover
+        if self._baseline_hot_keys:
+            recent_active = set(self._current_window_accesses.keys())
+            if self._previous_window_accesses:
+                recent_active.update(self._previous_window_accesses.keys())
+            overlap = len(recent_active & self._baseline_hot_keys) / max(1, len(self._baseline_hot_keys))
+            churn = 1.0 - overlap
+            workload_metrics["popularity_shift_score"] = round(churn, 4)
+
+        # 2. Autonomous traffic spike detection based on observed request arrival rate vs running baseline
+        recent_dur = snap.get("window_seconds", self.window_seconds)
+        obs_rate = snap["recent_requests"] / max(0.1, recent_dur)
+        if obs_rate >= 1.5 * self._baseline_request_rate:
+            workload_metrics["request_rate_baseline"] = self._baseline_request_rate
+
         workload_metrics["recent_request_count"] = snap["recent_requests"]
         workload_metrics["recent_hit_rate"] = hit_rate
         workload_metrics["recent_miss_rate"] = miss_rate
@@ -361,11 +385,11 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
         )
 
         workload = WorkloadState(
-            request_rate=event.request_rate if event is not None else 100.0,
+            request_rate=obs_rate if obs_rate > 0 else (event.request_rate if event is not None else 100.0),
             hit_rate=hit_rate,
             miss_rate=miss_rate,
             backend_latency_ms=backend_lat,
-            workload_type=event.workload_type if event is not None else None,
+            workload_type=None,  # Autonomous classification via WorkloadAnalyzer!
             timestamp=eval_time,
             window_seconds=self.window_seconds,
             metrics=workload_metrics,
@@ -423,6 +447,9 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
         self.rolling_telemetry.reset()
         self._current_window_accesses.clear()
         self._previous_window_accesses.clear()
+        self._baseline_hot_keys.clear()
+        self._baseline_request_rate = 100.0
+        self._window_requests = 0
         self._window_start_time = None
         self._requests = 0
         self._hits = 0
@@ -430,6 +457,8 @@ class AdaptivePolicyAdapter(BenchmarkPolicy):
         self._backend_calls = 0
         self._backend_latency_sum = 0.0
         self._evictions = 0
+        self._refresh_count = 0
+        self._last_decision = None
         self._refresh_count = 0
         self._last_decision = None
 
